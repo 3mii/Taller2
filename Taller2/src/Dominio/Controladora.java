@@ -77,7 +77,7 @@ public class Controladora {
     	return voviandasventa;
     }
     
-    //Estos metodos transforman los OBJETOS en VALUE OBJECTS
+    //Estos metodos transforman los OBJETOS en VALUE OBJECTS.
     
     private VOVianda toValueObject(Vianda vianda) {
     	if(vianda instanceof Vegetariana) {
