@@ -3,7 +3,7 @@ package Dominio;
 import ValueObjects.*;
 
 public class Inicio {
-
+//Hola Mundo
     
     public static void main(String[] args) {
         Controladora contr = Controladora.crearControladora();
