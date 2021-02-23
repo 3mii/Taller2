@@ -211,7 +211,7 @@ public class Controladora {
 		
     }
     
-    //Funciones de prueba
+    //Funciones de prueba.
     
     public void mostrarVentas() {
     	for (Venta venta : ventas.values()) {
