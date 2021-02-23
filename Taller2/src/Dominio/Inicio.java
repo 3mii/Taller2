@@ -1,13 +1,17 @@
 package Dominio;
 
+import java.io.IOException;
+
 import ValueObjects.*;
 
 public class Inicio {
 
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Controladora contr = Controladora.crearControladora();
         
+        
+        /*
         contr.addVianda(new VOVegetariana(false, "solo lechuga", "ensalada", "ensalada verde", 25));
         
         contr.addVianda(new VOVianda("chorizo", "chorizo rojo anashei", 40));
@@ -22,6 +26,8 @@ public class Inicio {
         
         contr.addViandaVenta("ensalada", 5, "2 con cebolla",2);
         contr.addViandaVenta("chorizo", 3, "con mostaza", 2);
+        
+        */
         //contr.removeViandaVenta("ensalada", 1, 22);
         //contr.removeViandaVenta("chorizo", 1, 22);
         
@@ -30,6 +36,11 @@ public class Inicio {
         
         //contr.mostrarVentas();
         
+        
+       // contr.save();
+        
+        
+        contr.load();
         
         for (VOVenta venta : contr.getVentas()) {
         	System.out.println(venta.getCodigo() + " | " + venta.getDireccion() + " | " + venta.getViandas().getCantidadUnidades());
@@ -43,9 +54,12 @@ public class Inicio {
     		}
 		}
         
-        //for (VOVianda_Venta vianda : contr.getViandasVenta(1)) {
-			//System.out.println(vianda.getVianda().getCodigo() + " | " + vianda.getCantidad());
-		//}
+        
+       
+        
+        
+        
+        
         
         
     }

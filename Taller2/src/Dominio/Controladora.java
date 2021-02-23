@@ -3,8 +3,13 @@ package Dominio;
 
 import ValueObjects.*;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
 import java.util.TreeMap;
 
+import Persistencia.Respaldo;
 
 public class Controladora {
 	private static Controladora controladora;
@@ -33,7 +38,7 @@ public class Controladora {
     		voventa.setCodigo(1);
     	else
     		voventa.setCodigo(ventas.lastKey()+1);
-    	ventas.put(voventa.getCodigo(), toObject(voventa));
+    	ventas.put(voventa.getCodigo(), toObject(voventa, false));
     }
     
     //REQUISITO 3
@@ -77,6 +82,41 @@ public class Controladora {
     	return voviandasventa;
     }
     
+    public void save() {
+    	
+		VOControladora vocontroladora = toValueObject(this);
+		Respaldo respaldo = new Respaldo();
+		Properties p = new Properties();
+		try {
+			p.load(new FileInputStream("cfg/config.properties"));
+			String archivo = p.getProperty("nombreArchivo");
+			System.out.println(archivo);
+			respaldo.save(archivo, vocontroladora);
+		} catch (IOException e) {
+			System.out.println(e.toString());
+		}
+	}
+    
+    public void load() throws IOException {
+    	Respaldo respaldo = new Respaldo();
+		Properties p = new Properties();
+		String nombreArchivo;
+		VOControladora aux;
+
+		try {
+			p.load(new FileInputStream("cfg/config.properties"));
+			nombreArchivo = p.getProperty("nombreArchivo");
+			aux = respaldo.load(nombreArchivo);
+			if(aux != null) {
+				viandas = toObject(aux).viandas;
+				ventas = toObject(aux).ventas;
+			}
+		} catch (FileNotFoundException ex) {
+			System.out.println(ex.toString());
+		}
+
+    }
+    
     //Estos metodos transforman los OBJETOS en VALUE OBJECTS.
     
     private VOVianda toValueObject(Vianda vianda) {
@@ -107,6 +147,21 @@ public class Controladora {
     	return new VOVenta(venta.getCodigo(), venta.getFecha(), venta.getHora(), venta.getDireccion(), venta.isPendiente(), toValueObject(venta.getViandas()));
     }
     
+    private VOControladora toValueObject(Controladora controladora) {
+    	
+    	VOControladora vocontroladora = new VOControladora();
+    	
+    	for (Venta venta : ventas.values()) {
+    		vocontroladora.getVentas().put(venta.getCodigo(), toValueObject(venta));
+		}
+    	
+    	for (Vianda vianda : viandas.values()) {
+			vocontroladora.getViandas().put(vianda.getCodigo(), toValueObject(vianda));
+		}
+    	
+    	return vocontroladora;
+    }
+    
     //Estos metodos transforman los VALUE OBJECTS en OBJETOS
     
     private Vianda toObject(VOVianda vovianda) {
@@ -134,9 +189,26 @@ public class Controladora {
     	return viandastmp;
     }
     
-    private Venta toObject(VOVenta voventa) {
-        return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion());
-        
+    private Venta toObject(VOVenta voventa, boolean conViandas) {
+        if(conViandas)
+    		return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion(), toObject(voventa.getViandas()));
+        else
+        	return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion());
+    }
+    
+    private Controladora toObject(VOControladora vocontroladora) {
+    		Controladora aux = new Controladora();
+    		
+	    	for (VOVenta venta : vocontroladora.getVentas().values()) {
+				aux.ventas.put(venta.getCodigo(), toObject(venta, true));
+			}
+	    	
+	    	for (VOVianda vianda : vocontroladora.getViandas().values()) {
+				aux.viandas.put(vianda.getCodigo(), toObject(vianda));
+			}
+	    	
+	    	return aux;
+		
     }
     
     //Funciones de prueba

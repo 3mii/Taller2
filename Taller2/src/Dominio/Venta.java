@@ -29,6 +29,15 @@ public class Venta {
         this.hora = hora;
         this.viandas = new Viandas_Venta();
     }
+    
+    public Venta(int codigo, LocalDate fecha, LocalTime hora, String direccion, Viandas_Venta viandas) {
+    	this.codigo = codigo;
+        this.direccion = direccion;
+        this.pendiente = true;
+        this.fecha = fecha;
+        this.hora = hora;
+        this.viandas = viandas;
+    }
 
     public Venta(int codigo, String direccion) {
         this.codigo = codigo;
