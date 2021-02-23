@@ -5,7 +5,7 @@ import java.io.IOException;
 import ValueObjects.*;
 
 public class Inicio {
-
+//Hola Mundo
     
     public static void main(String[] args) throws IOException {
         Controladora contr = Controladora.crearControladora();
