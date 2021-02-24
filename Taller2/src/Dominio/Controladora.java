@@ -82,6 +82,8 @@ public class Controladora {
     	return voviandasventa;
     }
     
+    
+    //REQUISITO 8
     public void save() {
     	
 		VOControladora vocontroladora = toValueObject(this);
@@ -97,6 +99,7 @@ public class Controladora {
 		}
 	}
     
+  //REQUISITO 9
     public void load() throws IOException {
     	Respaldo respaldo = new Respaldo();
 		Properties p = new Properties();
