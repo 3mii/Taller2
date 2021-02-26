@@ -29,34 +29,55 @@ public class Controladora {
     
     //REQUISITO 1
     public void addVianda(VOVianda vovianda){
-    	viandas.put(vovianda.getCodigo() ,toObject(vovianda));	
+    	try {
+    	viandas.put(vovianda.getCodigo() ,toObject(vovianda));
+    	}catch(NullPointerException n){
+    		System.out.println("No se ingresaron datos de la vianda: " +"	(" + n + ")");
+    	}
+    	
     }
     
     //REQUISITO 2
     public void addVenta(VOVenta voventa){
-    	if (ventas.isEmpty())
-    		voventa.setCodigo(1);
-    	else
-    		voventa.setCodigo(ventas.lastKey()+1);
-    	ventas.put(voventa.getCodigo(), toObject(voventa, false));
+    	try {
+    		if (ventas.isEmpty())
+    			voventa.setCodigo(1);
+    		else
+    			voventa.setCodigo(ventas.lastKey()+1);
+    		ventas.put(voventa.getCodigo(), toObject(voventa, false));
+    	}catch(NullPointerException n) {
+    		System.out.println("No se ingresaron datos de la venta: " +"	(" + n + ")");
+    	}
     }
     
     //REQUISITO 3
     public void addViandaVenta(String codigoVianda, int cantidad, String observacion, int codigoVenta) {
-    	ventas.get(codigoVenta).addVianda(new Vianda_Venta(viandas.get(codigoVianda), cantidad, observacion));    	
+    	try {
+    		ventas.get(codigoVenta).addVianda(new Vianda_Venta(viandas.get(codigoVianda), cantidad, observacion));    	
+    	}catch(NullPointerException n) {
+    		System.out.println("No existe la venta con el id: "+ codigoVenta + ", O la vianda con el codigo: "+ codigoVianda +"	(" + n + ")");
+    	}
     }
-    
     //REQUISITO 4
     public void removeViandaVenta(String codigoVianda, int codigoVenta, int cantidad) {
-    	ventas.get(codigoVenta).removeVianda(codigoVianda, cantidad);
+    	try {
+    		ventas.get(codigoVenta).removeVianda(codigoVianda, cantidad);
+    	}catch(NullPointerException n) {
+    		System.out.println("No existe la venta "+ codigoVenta +"	(" + n + ")");
+    	}
     }
     
     //REQUISITO 5
     public void endVenta(int codigo, boolean confirma) {
-    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
-    		ventas.remove(codigo);
-    	else
-    		ventas.get(codigo).setPendiente(!confirma);
+    	try {
+    		if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
+    			ventas.remove(codigo);
+    		else
+    			ventas.get(codigo).setPendiente(!confirma);
+    		
+    	}catch(NullPointerException n) {
+    		System.out.println("Numero de venta inválido"+"	(" + n + ")");
+    	}
     }
     
     //REQUISITO 6
@@ -217,9 +238,27 @@ public class Controladora {
     //Funciones de prueba.
     
     public void mostrarVentas() {
-    	for (Venta venta : ventas.values()) {
-			System.out.println(venta.toString());
-		}
+    	for (Venta venta : ventas.values())
+    	try {
+			System.out.println("Num Venta: " + venta.getCodigo());
+			for(Vianda_Venta vianda : venta.getViandas().getViandas().values()) {
+				System.out.println("  -"+vianda.getVianda().getCodigo());
+			}
+    	}catch(NullPointerException n) {
+    		System.out.println("Linea de detalle inválido");
+    	}
+    }
+    
+    public void mostrarVentasFinalizadas() {
+    	for (Venta venta : ventas.values())
+    	try {
+			System.out.println("Nº Venta: " + venta.getCodigo() + ", Pendiente: "+ venta.isPendiente());
+			for(Vianda_Venta vianda : venta.getViandas().getViandas().values()) {
+				System.out.println("  -"+vianda.getVianda().getCodigo());
+			}
+    	}catch(NullPointerException n) {
+    		System.out.println("Linea de detalle inválido");
+    	}
     }
     
     public void mostrarViandas() {
@@ -233,10 +272,13 @@ public class Controladora {
     }
     
     public void mostrarViandasVenta(int code) {
-    	
-    	for (Vianda_Venta vianda : ventas.get(code).getViandas().getViandas().values()) {
-				System.out.println(vianda.toString());
-		}
+    	try {
+    		System.out.println("Venta Nº"+code+":");
+    		for (Vianda_Venta vianda : ventas.get(code).getViandas().getViandas().values()) {
+    				System.out.println("  -"+vianda.getVianda().getCodigo()+ ", Cantidad: "+ vianda.getCantidad());
+    		}
+    	}catch(NullPointerException n) {
+    		System.out.println("No existe la venta: " +  code);
+    	}
     }
-    
 }

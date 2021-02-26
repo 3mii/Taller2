@@ -33,7 +33,7 @@ public class Viandas_Venta {
 		this.cantidadUnidades = cantidadUnidades;
 	}
 
-	public void add(Vianda_Venta vianda) {
+	public void add(Vianda_Venta vianda){
         if (this.cantidadUnidades + vianda.getCantidad() < 30) {
             if(this.viandas.containsKey(vianda.getVianda().getCodigo())) {
 	        	this.viandas.get(vianda.getVianda().getCodigo()).sumarCantidad(vianda.getCantidad());
@@ -42,7 +42,7 @@ public class Viandas_Venta {
             }
             this.cantidadUnidades+=vianda.getCantidad();
         } else {
-            //Excepcion
+        	//Excepcion
         }
     }
 
