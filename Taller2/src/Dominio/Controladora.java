@@ -1,31 +1,68 @@
-
 package Dominio;
-//Cambio de vida
 import ValueObjects.*;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.rmi.Naming;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Properties;
 import java.util.TreeMap;
-
 import Persistencia.Respaldo;
+import RMI.IControladora;
 
-public class Controladora {
-	private static Controladora controladora;
+public class Controladora extends UnicastRemoteObject implements IControladora{
+	
+	private static final long serialVersionUID = -5457533138152917027L;
+	
     private TreeMap<String, Vianda> viandas;
     private TreeMap<Integer, Venta> ventas;
+    private static String portValue;
+	private static String ipValue;
+	private static String protocolValue;
+	private static Properties prop;
     
-    private Controladora() {
-    	this.viandas = new TreeMap<String, Vianda>();
-    	this.ventas = new TreeMap<Integer ,Venta>();
+    static {
+		prop = new Properties();
+		try {
+			prop.load(new FileInputStream("cfg/config.properties"));
+			prop.list(System.out);
+			
+			portValue = prop.getProperty("SERVER_PORT");
+			ipValue = prop.getProperty("SERVER_IP");
+			protocolValue = prop.getProperty("PROTOCOL");
+			
+			System.out.println(portValue + " " + ipValue + " " + protocolValue);
+			
+			LocateRegistry.createRegistry(Integer.parseInt(portValue));
+			Registry reg = LocateRegistry.getRegistry(ipValue, Integer.parseInt(portValue));
+			System.out.println(reg.toString());
+		}  catch( Exception e) {
+			e.printStackTrace();
+		}
+	}
+    
+    public static void main(String[] args) {
+		try {
+			Controladora controladora = new Controladora();
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
     }
-
-    public static Controladora crearControladora() {
-    	if (controladora == null) 
-    		controladora = new Controladora();
-    	return controladora; 
-    }
+    
+    protected Controladora() throws RemoteException {
+		super();
+		try {
+			this.viandas = new TreeMap<String, Vianda>();
+	    	this.ventas = new TreeMap<Integer ,Venta>();
+			Naming.rebind(protocolValue + "://" + ipValue + ":" + portValue + "//" + "Controladora", this);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
     
     //REQUISITO 1
     public void addVianda(VOVianda vovianda){
@@ -33,7 +70,7 @@ public class Controladora {
     }
     
     //REQUISITO 2
-    public void addVenta(VOVenta voventa){
+    public void addVenta(VOVenta voventa){ //ACA CONTROLAR FECHA DE INGRESO
     	if (ventas.isEmpty())
     		voventa.setCodigo(1);
     	else
@@ -82,7 +119,6 @@ public class Controladora {
     	return voviandasventa;
     }
     
-    
     //REQUISITO 8
     public void save() {
     	
@@ -91,7 +127,7 @@ public class Controladora {
 		Properties p = new Properties();
 		try {
 			p.load(new FileInputStream("cfg/config.properties"));
-			String archivo = p.getProperty("nombreArchivo");
+			String archivo = p.getProperty("BACKUP_FILE");
 			System.out.println(archivo);
 			respaldo.save(archivo, vocontroladora);
 		} catch (IOException e) {
@@ -108,7 +144,7 @@ public class Controladora {
 
 		try {
 			p.load(new FileInputStream("cfg/config.properties"));
-			nombreArchivo = p.getProperty("nombreArchivo");
+			nombreArchivo = p.getProperty("BACKUP_FILE");
 			aux = respaldo.load(nombreArchivo);
 			if(aux != null) {
 				viandas = toObject(aux).viandas;
@@ -117,6 +153,8 @@ public class Controladora {
 		} catch (FileNotFoundException ex) {
 			System.out.println(ex.toString());
 		}
+		
+		this.mostrarVentas();
 
     }
     
@@ -199,7 +237,7 @@ public class Controladora {
         	return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion());
     }
     
-    private Controladora toObject(VOControladora vocontroladora) {
+    private Controladora toObject(VOControladora vocontroladora) throws RemoteException {
     		Controladora aux = new Controladora();
     		
 	    	for (VOVenta venta : vocontroladora.getVentas().values()) {
