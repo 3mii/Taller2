@@ -2,12 +2,10 @@ package Cliente;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.rmi.Naming;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.util.Properties;
 
+import GUI.*;
 import RMI.IControladora;
 
 public class Cliente {
@@ -23,12 +21,11 @@ public class Cliente {
 			
 			IControladora contr = (IControladora) Naming.lookup(protocolValue + "://"+ ipValue + ":" + portValue + "//Controladora");		
 			
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		} catch (NotBoundException e) {
-			e.printStackTrace();
+			Principal pri = new Principal(contr); 
+			pri.setVisible(true);
+			
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 }

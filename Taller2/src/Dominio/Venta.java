@@ -8,6 +8,9 @@ package Dominio;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import Excepciones.LimiteDeViandasException;
+import Excepciones.VentaNoTieneViandaException;
+
 /**
  *
  * @author Emi
@@ -96,11 +99,11 @@ public class Venta {
         this.viandas = ventas;
     }
     
-    public void addVianda(Vianda_Venta vianda) {
+    public void addVianda(Vianda_Venta vianda) throws LimiteDeViandasException {
     	this.viandas.add(vianda);
     }
     
-    public void removeVianda(String codigo, int cantidad) {
+    public void removeVianda(String codigo, int cantidad) throws VentaNoTieneViandaException {
     	this.viandas.remove(codigo, cantidad);
     }
     

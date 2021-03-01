@@ -82,6 +82,35 @@ public class VOVenta implements Serializable{
 	public void setViandas(VOViandas_Venta viandas) {
 		this.viandas = viandas;
 	}
+	
+	 public String getFechaString() { //Temporal
+	        //Mostrar Fecha
+	    	String fechatmp = "";
+	        if (this.fecha.getDayOfMonth() < 10) {
+	            fechatmp = fechatmp + "0";
+	        }
+	        fechatmp = fechatmp + this.fecha.getDayOfMonth() + "/";
+	        if (this.fecha.getMonthValue() < 10) {
+	        	fechatmp = fechatmp + "0";
+	        }
+	        fechatmp = fechatmp + this.fecha.getMonthValue() + "/";
+	        fechatmp = fechatmp + this.fecha.getYear();
+	        return fechatmp;
+	    }
+
+	    public String getHoraString() { //Temporal
+	        //Mostrar Hora
+	    	String horatmp = "";
+	        if (this.hora.getHour() < 10) {
+	            horatmp = horatmp + "0";
+	        }
+	        horatmp = horatmp + this.hora.getHour() + ":";
+	        if (this.hora.getMinute() < 10) {
+	        	horatmp = horatmp + "0";
+	        }
+	        horatmp = horatmp + this.hora.getMinute();
+	        return horatmp;
+	    }
 
     
     

@@ -1,9 +1,11 @@
 package Dominio;
 import ValueObjects.*;
 
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -11,6 +13,8 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Properties;
 import java.util.TreeMap;
+
+import Excepciones.*;
 import Persistencia.Respaldo;
 import RMI.IControladora;
 
@@ -23,77 +27,94 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     private static String portValue;
 	private static String ipValue;
 	private static String protocolValue;
+	private static String backupFileValue;
 	private static Properties prop;
     
     static {
 		prop = new Properties();
 		try {
 			prop.load(new FileInputStream("cfg/config.properties"));
-			prop.list(System.out);
-			
 			portValue = prop.getProperty("SERVER_PORT");
 			ipValue = prop.getProperty("SERVER_IP");
 			protocolValue = prop.getProperty("PROTOCOL");
-			
-			System.out.println(portValue + " " + ipValue + " " + protocolValue);
-			
+			backupFileValue = prop.getProperty("BACKUP_FILE");
 			LocateRegistry.createRegistry(Integer.parseInt(portValue));
 			Registry reg = LocateRegistry.getRegistry(ipValue, Integer.parseInt(portValue));
-			System.out.println(reg.toString());
-		}  catch( Exception e) {
-			e.printStackTrace();
-		}
+		}  catch(Exception ex) {
+			System.out.println(ex.getMessage());
+		} 
 	}
     
     public static void main(String[] args) {
 		try {
 			Controladora controladora = new Controladora();
-		} catch (RemoteException e) {
-			e.printStackTrace();
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
 		}
     }
     
-    protected Controladora() throws RemoteException {
+    protected Controladora() throws ClassNotFoundException, IOException{
 		super();
-		try {
-			this.viandas = new TreeMap<String, Vianda>();
-	    	this.ventas = new TreeMap<Integer ,Venta>();
-			Naming.rebind(protocolValue + "://" + ipValue + ":" + portValue + "//" + "Controladora", this);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		this.viandas = new TreeMap<String, Vianda>();
+    	this.ventas = new TreeMap<Integer ,Venta>();
+    	Naming.rebind(protocolValue + "://" + ipValue + ":" + portValue + "//" + "Controladora", this);
 	}
     
     //REQUISITO 1
-    public void addVianda(VOVianda vovianda){
-    	viandas.put(vovianda.getCodigo() ,toObject(vovianda));	
+    public void addVianda(VOVianda vovianda) throws ViandaYaExisteException, ViandaVaciaException{
+    	if(vovianda.getCodigo() == null)
+    		throw new ViandaVaciaException("La vianda que intenta agregar está vacía.");
+    	else if(!viandas.containsKey(vovianda.getCodigo()))
+    		viandas.put(vovianda.getCodigo() ,toObject(vovianda));	
+    	else
+    		throw new ViandaYaExisteException("Ya existe una vianda con el código ingresado.");
     }
     
     //REQUISITO 2
-    public void addVenta(VOVenta voventa){ //ACA CONTROLAR FECHA DE INGRESO
-    	if (ventas.isEmpty())
+    public void addVenta(VOVenta voventa) throws VentaVaciaException, FechaIncorrectaException{ //ACA CONTROLAR FECHA DE INGRESO
+    	if(voventa.getDireccion() == null)
+    		throw new VentaVaciaException("La vianda que intenta agregar está vacía.");
+    	else if (ventas.isEmpty())
     		voventa.setCodigo(1);
-    	else
+    	else if (voventa.getFecha().isBefore(ventas.lastEntry().getValue().getFecha()) || (voventa.getFecha().equals(ventas.lastEntry().getValue().getFecha()) && voventa.getHora().isBefore(ventas.lastEntry().getValue().getHora())))
+    	    throw new FechaIncorrectaException("La fecha y hora de la venta ingresada debe ser posterior a la última.\nSe recomienda sincronizar el reloj y calendario con el servidor."); 	
+    	else {
     		voventa.setCodigo(ventas.lastKey()+1);
-    	ventas.put(voventa.getCodigo(), toObject(voventa, false));
+		    ventas.put(voventa.getCodigo(), toObject(voventa, false));
+    	}
     }
     
     //REQUISITO 3
-    public void addViandaVenta(String codigoVianda, int cantidad, String observacion, int codigoVenta) {
-    	ventas.get(codigoVenta).addVianda(new Vianda_Venta(viandas.get(codigoVianda), cantidad, observacion));    	
+    public void addViandaVenta(String codigoVianda, int cantidad, String observacion, int codigoVenta) throws ViandaNoExisteException, VentaNoExisteException, LimiteDeViandasException {
+    	if(ventas.containsKey(codigoVenta)) {
+	    	if(viandas.containsKey(codigoVianda))
+	    		ventas.get(codigoVenta).addVianda(new Vianda_Venta(viandas.get(codigoVianda), cantidad, observacion));
+	    	else
+	    		throw new ViandaNoExisteException("No existe ninguna vianda con el codigo ingresado");
+    	}else
+    		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
     }
     
     //REQUISITO 4
-    public void removeViandaVenta(String codigoVianda, int codigoVenta, int cantidad) {
-    	ventas.get(codigoVenta).removeVianda(codigoVianda, cantidad);
+    public void removeViandaVenta(String codigoVianda, int codigoVenta, int cantidad) throws ViandaNoExisteException, VentaNoExisteException, VentaNoTieneViandaException {
+    	if(ventas.containsKey(codigoVenta)) {
+	    	if(viandas.containsKey(codigoVianda))
+	    		ventas.get(codigoVenta).removeVianda(codigoVianda, cantidad);
+	    	else
+	    		throw new ViandaNoExisteException("No existe ninguna vianda con el codigo ingresado");
+    	}else
+    		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
     }
     
     //REQUISITO 5
-    public void endVenta(int codigo, boolean confirma) {
-    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
-    		ventas.remove(codigo);
-    	else
-    		ventas.get(codigo).setPendiente(!confirma);
+    public void endVenta(int codigo, boolean confirma) throws VentaNoExisteException {
+    	if(ventas.containsKey(codigo)) {
+	    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
+	    		ventas.remove(codigo);
+	    	else
+	    		ventas.get(codigo).setPendiente(!confirma);
+    	}else
+    		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
     }
     
     //REQUISITO 6
@@ -109,53 +130,43 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     }
     
     //REQUISITO 7
-    public VOVianda_Venta[] getViandasVenta(int codigo){
-    	int i = 0;
-    	VOVianda_Venta voviandasventa[] = new VOVianda_Venta[ventas.size()];
-    	for (Vianda_Venta viandaventa : ventas.get(codigo).getViandas().getViandas().values()) {
-    		voviandasventa[i] = toValueObject(viandaventa);
-    		i++;
-		}
-    	return voviandasventa;
+    public VOVianda_Venta[] getViandasVenta(int codigo) throws VentaNoExisteException{
+    	if(ventas.containsKey(codigo)) {
+    		int i = 0;
+        	VOVianda_Venta voviandasventa[] = new VOVianda_Venta[ventas.size()];
+        	for (Vianda_Venta viandaventa : ventas.get(codigo).getViandas().getViandas().values()) {
+        		voviandasventa[i] = toValueObject(viandaventa);
+        		i++;
+    		}
+        	return voviandasventa;
+    	}else
+    		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
+    		
+    	
     }
     
     //REQUISITO 8
-    public void save() {
-    	
+    public void save() throws IOException {
 		VOControladora vocontroladora = toValueObject(this);
 		Respaldo respaldo = new Respaldo();
-		Properties p = new Properties();
-		try {
-			p.load(new FileInputStream("cfg/config.properties"));
-			String archivo = p.getProperty("BACKUP_FILE");
-			System.out.println(archivo);
-			respaldo.save(archivo, vocontroladora);
-		} catch (IOException e) {
-			System.out.println(e.toString());
-		}
+		respaldo.save(backupFileValue, vocontroladora);
 	}
     
   //REQUISITO 9
-    public void load() throws IOException {
+    public void load() throws IOException, ClassNotFoundException, RespaldoVacioException, RespaldoNoExisteException {
     	Respaldo respaldo = new Respaldo();
-		Properties p = new Properties();
-		String nombreArchivo;
 		VOControladora aux;
-
 		try {
-			p.load(new FileInputStream("cfg/config.properties"));
-			nombreArchivo = p.getProperty("BACKUP_FILE");
-			aux = respaldo.load(nombreArchivo);
-			if(aux != null) {
-				viandas = toObject(aux).viandas;
-				ventas = toObject(aux).ventas;
-			}
-		} catch (FileNotFoundException ex) {
-			System.out.println(ex.toString());
+			aux = respaldo.load(backupFileValue);
+			System.out.println(aux.getViandas().isEmpty() && aux.getVentas().isEmpty());
+			viandas = toObject(aux).viandas;
+			ventas = toObject(aux).ventas;
+		}catch (EOFException ex) {
+			throw new RespaldoVacioException("El archivo de respaldo " + '"' + backupFileValue + '"' + " no contiene información.");
+		}catch (FileNotFoundException ex) {
+			throw new RespaldoNoExisteException("El archivo de respaldo " + '"' + backupFileValue + '"' + " no se ha podido encontrar.");
 		}
 		
-		this.mostrarVentas();
-
     }
     
     //Estos metodos transforman los OBJETOS en VALUE OBJECTS.
@@ -224,7 +235,10 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     	Viandas_Venta viandastmp= new Viandas_Venta();
     	
     	for (VOVianda_Venta voviandaventa : voviandasventa.getViandas().values()) {
-			viandastmp.add(toObject(voviandaventa));
+			try {
+				viandastmp.add(toObject(voviandaventa));
+			} catch (LimiteDeViandasException ex) {
+			}
 		}
     	
     	return viandastmp;
@@ -237,44 +251,16 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
         	return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion());
     }
     
-    private Controladora toObject(VOControladora vocontroladora) throws RemoteException {
-    		Controladora aux = new Controladora();
-    		
+    private Controladora toObject(VOControladora vocontroladora) throws RemoteException, MalformedURLException {
+    		Controladora aux = this;
+    		aux.ventas = new TreeMap<Integer, Venta>();
+    		aux.viandas = new TreeMap<String, Vianda>();
 	    	for (VOVenta venta : vocontroladora.getVentas().values()) {
 				aux.ventas.put(venta.getCodigo(), toObject(venta, true));
 			}
-	    	
 	    	for (VOVianda vianda : vocontroladora.getViandas().values()) {
 				aux.viandas.put(vianda.getCodigo(), toObject(vianda));
 			}
-	    	
 	    	return aux;
-		
     }
-    
-    //Funciones de prueba.
-    
-    public void mostrarVentas() {
-    	for (Venta venta : ventas.values()) {
-			System.out.println(venta.toString());
-		}
-    }
-    
-    public void mostrarViandas() {
-    	for (Vianda vianda : viandas.values()) {
-			if(vianda instanceof Vegetariana) {
-				Vegetariana vegetariana = (Vegetariana) vianda;
-				System.out.println(vegetariana.toString());
-			}else
-				System.out.println(vianda.toString());
-		}
-    }
-    
-    public void mostrarViandasVenta(int code) {
-    	
-    	for (Vianda_Venta vianda : ventas.get(code).getViandas().getViandas().values()) {
-				System.out.println(vianda.toString());
-		}
-    }
-    
 }

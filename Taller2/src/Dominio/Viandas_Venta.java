@@ -2,6 +2,9 @@ package Dominio;
 
 import java.util.TreeMap;
 
+import Excepciones.LimiteDeViandasException;
+import Excepciones.VentaNoTieneViandaException;
+
 public class Viandas_Venta {
 
     private TreeMap<String, Vianda_Venta> viandas;
@@ -33,7 +36,7 @@ public class Viandas_Venta {
 		this.cantidadUnidades = cantidadUnidades;
 	}
 
-	public void add(Vianda_Venta vianda) {
+	public void add(Vianda_Venta vianda) throws LimiteDeViandasException {
         if (this.cantidadUnidades + vianda.getCantidad() < 30) {
             if(this.viandas.containsKey(vianda.getVianda().getCodigo())) {
 	        	this.viandas.get(vianda.getVianda().getCodigo()).sumarCantidad(vianda.getCantidad());
@@ -42,11 +45,11 @@ public class Viandas_Venta {
             }
             this.cantidadUnidades+=vianda.getCantidad();
         } else {
-            //Excepcion
+            throw new LimiteDeViandasException("No se pudo ingresar la vianda, la cantidad supera el máximo de unidades posibles (30)");
         }
     }
 
-    public void remove(String codigo, int cantidad) {
+    public void remove(String codigo, int cantidad) throws VentaNoTieneViandaException { 
         if(this.viandas.containsKey(codigo)){
             Vianda_Venta temp = (Vianda_Venta) this.viandas.get(codigo);
             if(temp.getCantidad() <= cantidad){
@@ -57,7 +60,7 @@ public class Viandas_Venta {
                 this.cantidadUnidades -= cantidad;
             }
         } else {
-            //Excepcion
+            throw new VentaNoTieneViandaException("La venta seleccionada no contiene la vianda ingresada.");
         }
     }
 
