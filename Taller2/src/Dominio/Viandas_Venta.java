@@ -37,7 +37,7 @@ public class Viandas_Venta {
 	}
 
 	public void add(Vianda_Venta vianda) throws LimiteDeViandasException {
-        if (this.cantidadUnidades + vianda.getCantidad() < 30) {
+        if (this.cantidadUnidades + vianda.getCantidad() <= 30) {
             if(this.viandas.containsKey(vianda.getVianda().getCodigo())) {
 	        	this.viandas.get(vianda.getVianda().getCodigo()).sumarCantidad(vianda.getCantidad());
             }else {

@@ -74,9 +74,10 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     public void addVenta(VOVenta voventa) throws VentaVaciaException, FechaIncorrectaException{ //ACA CONTROLAR FECHA DE INGRESO
     	if(voventa.getDireccion() == null)
     		throw new VentaVaciaException("La vianda que intenta agregar está vacía.");
-    	else if (ventas.isEmpty())
+    	else if (ventas.isEmpty()) {
     		voventa.setCodigo(1);
-    	else if (voventa.getFecha().isBefore(ventas.lastEntry().getValue().getFecha()) || (voventa.getFecha().equals(ventas.lastEntry().getValue().getFecha()) && voventa.getHora().isBefore(ventas.lastEntry().getValue().getHora())))
+    		ventas.put(1, toObject(voventa, false));
+    	}else if (voventa.getFecha().isBefore(ventas.lastEntry().getValue().getFecha()) || (voventa.getFecha().equals(ventas.lastEntry().getValue().getFecha()) && voventa.getHora().isBefore(ventas.lastEntry().getValue().getHora())))
     	    throw new FechaIncorrectaException("La fecha y hora de la venta ingresada debe ser posterior a la última.\nSe recomienda sincronizar el reloj y calendario con el servidor."); 	
     	else {
     		voventa.setCodigo(ventas.lastKey()+1);
@@ -107,12 +108,16 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     }
     
     //REQUISITO 5
-    public void endVenta(int codigo, boolean confirma) throws VentaNoExisteException {
+    public void endVenta(int codigo, boolean confirma) throws VentaNoExisteException, VentaYaConfirmadaException {
     	if(ventas.containsKey(codigo)) {
-	    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
-	    		ventas.remove(codigo);
-	    	else
-	    		ventas.get(codigo).setPendiente(!confirma);
+    		if(ventas.get(codigo).isPendiente()) {
+		    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
+		    		ventas.remove(codigo);
+		    	else
+		    		ventas.get(codigo).setPendiente(!confirma);
+    		}else
+    			throw new VentaYaConfirmadaException("No se puede eliminar una venta que ya fue confirmada.");
+    			
     	}else
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
     }
@@ -133,16 +138,14 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     public VOVianda_Venta[] getViandasVenta(int codigo) throws VentaNoExisteException{
     	if(ventas.containsKey(codigo)) {
     		int i = 0;
-        	VOVianda_Venta voviandasventa[] = new VOVianda_Venta[ventas.size()];
-        	for (Vianda_Venta viandaventa : ventas.get(codigo).getViandas().getViandas().values()) {
-        		voviandasventa[i] = toValueObject(viandaventa);
-        		i++;
-    		}
+        	VOVianda_Venta voviandasventa[] = new VOVianda_Venta[ventas.get(codigo).getViandas().getViandas().size()];
+	        	for (Vianda_Venta viandaventa : ventas.get(codigo).getViandas().getViandas().values()) {
+	        		voviandasventa[i] = toValueObject(viandaventa);
+	        		i++;
+	    		}
         	return voviandasventa;
     	}else
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
-    		
-    	
     }
     
     //REQUISITO 8
@@ -167,6 +170,16 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 			throw new RespaldoNoExisteException("El archivo de respaldo " + '"' + backupFileValue + '"' + " no se ha podido encontrar.");
 		}
 		
+    }
+    
+    public VOVianda[] getViandas() {
+    	int i = 0;
+    	VOVianda voviandas[] = new VOVianda[viandas.size()];
+    	for (Vianda vianda : viandas.values()) {
+			voviandas[i] = toValueObject(vianda);
+    		i++;
+		}
+    	return voviandas;
     }
     
     //Estos metodos transforman los OBJETOS en VALUE OBJECTS.

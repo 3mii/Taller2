@@ -11,6 +11,7 @@ import Excepciones.RespaldoVacioException;
 import Excepciones.VentaNoExisteException;
 import Excepciones.VentaNoTieneViandaException;
 import Excepciones.VentaVaciaException;
+import Excepciones.VentaYaConfirmadaException;
 import Excepciones.ViandaNoExisteException;
 import Excepciones.ViandaVaciaException;
 import Excepciones.ViandaYaExisteException;
@@ -30,7 +31,7 @@ public interface IControladora extends Remote{
     public void removeViandaVenta(String codigoVianda, int codigoVenta, int cantidad) throws RemoteException, ViandaNoExisteException, VentaNoExisteException, VentaNoTieneViandaException;
     
     //REQUISITO 5
-    public void endVenta(int codigo, boolean confirma) throws RemoteException, VentaNoExisteException;
+    public void endVenta(int codigo, boolean confirma) throws RemoteException, VentaNoExisteException, VentaYaConfirmadaException;
     
     //REQUISITO 6
     public VOVenta[] getVentas() throws RemoteException;
@@ -43,5 +44,7 @@ public interface IControladora extends Remote{
     
     //REQUISITO 9
     public void load() throws IOException, RemoteException, ClassNotFoundException, RespaldoVacioException, RespaldoNoExisteException;
+    
+    public VOVianda[] getViandas() throws RemoteException;
     
 }
