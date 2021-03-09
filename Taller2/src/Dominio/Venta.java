@@ -143,7 +143,17 @@ public class Venta {
 	}
 
 	
-    
+	@Override
+	public boolean equals(Object obj) {
+		
+		Venta venta = (Venta) obj;
+		
+		return 	codigo == venta.getCodigo() && 
+				direccion == venta.getDireccion() && 
+				pendiente == venta.isPendiente() &&
+				fecha == venta.getFecha() &&
+				hora == venta.getHora();
+	}
     
     
 }

@@ -51,6 +51,15 @@ public class Vianda {
 		return "Vianda [codigo=" + codigo + ", descripcion=" + descripcion + ", precio_unitario=" + precioUnitario
 				+ "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		Vianda vianda = (Vianda) obj;
+		
+		return 	codigo == vianda.getCodigo() && 
+				descripcion == vianda.getDescripcion() && 
+				precioUnitario == vianda.getPrecio_unitario();
+	}
 
     
     

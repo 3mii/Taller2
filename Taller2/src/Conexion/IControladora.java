@@ -1,4 +1,4 @@
-package RMI;
+package Conexion;
 import ValueObjects.*;
 import java.io.IOException;
 import java.rmi.Remote;
@@ -46,5 +46,7 @@ public interface IControladora extends Remote{
     public void load() throws IOException, RemoteException, ClassNotFoundException, RespaldoVacioException, RespaldoNoExisteException;
     
     public VOVianda[] getViandas() throws RemoteException;
+    
+    public boolean ViandaExiste(String codigo) throws RemoteException;
     
 }

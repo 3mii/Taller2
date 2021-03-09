@@ -9,8 +9,10 @@ public class ViandaYaExisteException extends Exception {
 		mensaje = msg;
 	}
 	
-	public String getMensaje() {
-		return mensaje;
+	@Override
+	public String getMessage() {
+			return mensaje;
 	}
 
 }
+

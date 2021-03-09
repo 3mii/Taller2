@@ -8,7 +8,8 @@ public class LimiteDeViandasException extends Exception{
 		mensaje = msg;
 	}
 	
-	public String getMensaje() {
+	@Override
+	public String getMessage() {
 		return mensaje;
 	}
 }

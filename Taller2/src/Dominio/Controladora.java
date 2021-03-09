@@ -14,9 +14,9 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.Properties;
 import java.util.TreeMap;
 
+import Conexion.*;
 import Excepciones.*;
 import Persistencia.Respaldo;
-import RMI.IControladora;
 
 public class Controladora extends UnicastRemoteObject implements IControladora{
 	
@@ -29,10 +29,12 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 	private static String protocolValue;
 	private static String backupFileValue;
 	private static Properties prop;
+	private static Monitor monitor;
     
     static {
 		prop = new Properties();
 		try {
+			monitor = new Monitor();
 			prop.load(new FileInputStream("cfg/config.properties"));
 			portValue = prop.getProperty("SERVER_PORT");
 			ipValue = prop.getProperty("SERVER_IP");
@@ -40,6 +42,7 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 			backupFileValue = prop.getProperty("BACKUP_FILE");
 			LocateRegistry.createRegistry(Integer.parseInt(portValue));
 			Registry reg = LocateRegistry.getRegistry(ipValue, Integer.parseInt(portValue));
+			
 		}  catch(Exception ex) {
 			System.out.println(ex.getMessage());
 		} 
@@ -53,77 +56,112 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 		}
     }
     
-    protected Controladora() throws ClassNotFoundException, IOException{
-		super();
-		this.viandas = new TreeMap<String, Vianda>();
-    	this.ventas = new TreeMap<Integer ,Venta>();
+    protected Controladora() throws IOException {
+		try {
+			load();
+		} catch (RespaldoVacioException | RespaldoNoExisteException | ClassNotFoundException | IOException e) {
+			this.viandas = new TreeMap<String, Vianda>();
+	    	this.ventas = new TreeMap<Integer ,Venta>();
+	    	save();
+		}
     	Naming.rebind(protocolValue + "://" + ipValue + ":" + portValue + "//" + "Controladora", this);
 	}
     
     //REQUISITO 1
     public void addVianda(VOVianda vovianda) throws ViandaYaExisteException, ViandaVaciaException{
-    	if(vovianda.getCodigo() == null)
+    	monitor.comienzoEscritura();
+    	if(toObject(vovianda).equals(toObject(new VOVianda()))) {
+    		monitor.terminoEscritura();
     		throw new ViandaVaciaException("La vianda que intenta agregar está vacía.");
-    	else if(!viandas.containsKey(vovianda.getCodigo()))
+    	}else if(!viandas.containsKey(vovianda.getCodigo())) {
     		viandas.put(vovianda.getCodigo() ,toObject(vovianda));	
-    	else
+    		mostrarViandas();
+    		monitor.terminoEscritura();
+    	}else {
+    		monitor.terminoEscritura();
     		throw new ViandaYaExisteException("Ya existe una vianda con el código ingresado.");
+    	}
     }
     
     //REQUISITO 2
-    public void addVenta(VOVenta voventa) throws VentaVaciaException, FechaIncorrectaException{ //ACA CONTROLAR FECHA DE INGRESO
-    	if(voventa.getDireccion() == null)
-    		throw new VentaVaciaException("La vianda que intenta agregar está vacía.");
-    	else if (ventas.isEmpty()) {
+    public void addVenta(VOVenta voventa) throws VentaVaciaException, FechaIncorrectaException{
+    	monitor.comienzoEscritura();
+    	if(toObject(voventa, false).equals(toObject(new VOVenta(), false))) {
+    		monitor.terminoEscritura();
+    		throw new VentaVaciaException("La venta que intenta agregar está vacía.");
+    	}else if (ventas.isEmpty()) {
     		voventa.setCodigo(1);
     		ventas.put(1, toObject(voventa, false));
-    	}else if (voventa.getFecha().isBefore(ventas.lastEntry().getValue().getFecha()) || (voventa.getFecha().equals(ventas.lastEntry().getValue().getFecha()) && voventa.getHora().isBefore(ventas.lastEntry().getValue().getHora())))
-    	    throw new FechaIncorrectaException("La fecha y hora de la venta ingresada debe ser posterior a la última.\nSe recomienda sincronizar el reloj y calendario con el servidor."); 	
-    	else {
+    		monitor.terminoEscritura();
+    	}else if (voventa.getFecha().isBefore(ventas.lastEntry().getValue().getFecha()) || (voventa.getFecha().equals(ventas.lastEntry().getValue().getFecha()) && voventa.getHora().isBefore(ventas.lastEntry().getValue().getHora()))) {
+    		monitor.terminoEscritura();
+    		throw new FechaIncorrectaException("La fecha y hora de la venta ingresada debe ser posterior a la última.\nSe recomienda sincronizar el reloj y calendario con el servidor."); 	
+    	}else {
     		voventa.setCodigo(ventas.lastKey()+1);
 		    ventas.put(voventa.getCodigo(), toObject(voventa, false));
+		    monitor.terminoEscritura();
     	}
     }
     
     //REQUISITO 3
     public void addViandaVenta(String codigoVianda, int cantidad, String observacion, int codigoVenta) throws ViandaNoExisteException, VentaNoExisteException, LimiteDeViandasException {
+    	monitor.comienzoEscritura();
     	if(ventas.containsKey(codigoVenta)) {
-	    	if(viandas.containsKey(codigoVianda))
+	    	if(viandas.containsKey(codigoVianda)) {
 	    		ventas.get(codigoVenta).addVianda(new Vianda_Venta(viandas.get(codigoVianda), cantidad, observacion));
-	    	else
+	    		monitor.terminoEscritura();
+	    	}else {
+	    		monitor.terminoEscritura();
 	    		throw new ViandaNoExisteException("No existe ninguna vianda con el codigo ingresado");
-    	}else
+	    	}
+    	}else {
+    		monitor.terminoEscritura();
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
+    	}
     }
     
     //REQUISITO 4
     public void removeViandaVenta(String codigoVianda, int codigoVenta, int cantidad) throws ViandaNoExisteException, VentaNoExisteException, VentaNoTieneViandaException {
+    	monitor.comienzoEscritura();
     	if(ventas.containsKey(codigoVenta)) {
-	    	if(viandas.containsKey(codigoVianda))
+	    	if(viandas.containsKey(codigoVianda)) {
 	    		ventas.get(codigoVenta).removeVianda(codigoVianda, cantidad);
-	    	else
+	    		monitor.terminoEscritura();
+	    	}else {
+	    		monitor.terminoEscritura();
 	    		throw new ViandaNoExisteException("No existe ninguna vianda con el codigo ingresado");
-    	}else
+	    	}
+    	}else {
+    		monitor.terminoEscritura();
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
+    	}
     }
     
     //REQUISITO 5
     public void endVenta(int codigo, boolean confirma) throws VentaNoExisteException, VentaYaConfirmadaException {
+    	monitor.comienzoEscritura();
     	if(ventas.containsKey(codigo)) {
     		if(ventas.get(codigo).isPendiente()) {
-		    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty())
+		    	if(!confirma || ventas.get(codigo).getViandas().getViandas().isEmpty()) {
 		    		ventas.remove(codigo);
-		    	else
+		    		monitor.terminoEscritura();
+		    	}else {
 		    		ventas.get(codigo).setPendiente(!confirma);
-    		}else
+		    		monitor.terminoEscritura();
+		    	}
+    		}else {
+    			monitor.terminoEscritura();
     			throw new VentaYaConfirmadaException("No se puede eliminar una venta que ya fue confirmada.");
-    			
-    	}else
+    		}
+    	}else {
+    		monitor.terminoEscritura();
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
+    	}
     }
     
     //REQUISITO 6
     public VOVenta[] getVentas() {
+    	monitor.comienzoLectura();
     	int i = 0;
     	VOVenta voventas[] = new VOVenta[ventas.size()];
     	for (Venta venta : ventas.values()) {
@@ -131,11 +169,13 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 			voventas[i].getViandas().setViandas(null);
     		i++;
 		}
+    	monitor.terminoLectura();
     	return voventas;
     }
     
     //REQUISITO 7
     public VOVianda_Venta[] getViandasVenta(int codigo) throws VentaNoExisteException{
+    	monitor.comienzoLectura();
     	if(ventas.containsKey(codigo)) {
     		int i = 0;
         	VOVianda_Venta voviandasventa[] = new VOVianda_Venta[ventas.get(codigo).getViandas().getViandas().size()];
@@ -143,43 +183,60 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 	        		voviandasventa[i] = toValueObject(viandaventa);
 	        		i++;
 	    		}
+	        monitor.terminoLectura();
         	return voviandasventa;
-    	}else
+    	}else {
+    		monitor.terminoLectura();
     		throw new VentaNoExisteException("No existe ninguna venta con el codigo ingresado");
+    	}
     }
     
     //REQUISITO 8
     public void save() throws IOException {
+    	monitor.comienzoEscritura();
 		VOControladora vocontroladora = toValueObject(this);
 		Respaldo respaldo = new Respaldo();
 		respaldo.save(backupFileValue, vocontroladora);
+		monitor.terminoEscritura();
 	}
     
   //REQUISITO 9
     public void load() throws IOException, ClassNotFoundException, RespaldoVacioException, RespaldoNoExisteException {
+    	monitor.comienzoLectura();
     	Respaldo respaldo = new Respaldo();
 		VOControladora aux;
 		try {
 			aux = respaldo.load(backupFileValue);
-			System.out.println(aux.getViandas().isEmpty() && aux.getVentas().isEmpty());
 			viandas = toObject(aux).viandas;
 			ventas = toObject(aux).ventas;
+			monitor.terminoLectura();
 		}catch (EOFException ex) {
+			monitor.terminoLectura();
 			throw new RespaldoVacioException("El archivo de respaldo " + '"' + backupFileValue + '"' + " no contiene información.");
 		}catch (FileNotFoundException ex) {
+			monitor.terminoLectura();
 			throw new RespaldoNoExisteException("El archivo de respaldo " + '"' + backupFileValue + '"' + " no se ha podido encontrar.");
 		}
 		
     }
     
     public VOVianda[] getViandas() {
+    	monitor.comienzoLectura();
     	int i = 0;
     	VOVianda voviandas[] = new VOVianda[viandas.size()];
     	for (Vianda vianda : viandas.values()) {
 			voviandas[i] = toValueObject(vianda);
     		i++;
 		}
+    	monitor.terminoLectura();
     	return voviandas;
+    }
+    
+    public boolean ViandaExiste(String codigo) {
+    	monitor.comienzoLectura();
+    	boolean existe = viandas.containsKey(codigo);
+    	monitor.terminoLectura();
+    	return existe;
     }
     
     //Estos metodos transforman los OBJETOS en VALUE OBJECTS.
@@ -253,7 +310,6 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 			} catch (LimiteDeViandasException ex) {
 			}
 		}
-    	
     	return viandastmp;
     }
     
@@ -276,4 +332,12 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
 			}
 	    	return aux;
     }
+    
+    public void mostrarViandas() {
+    	for (Vianda vianda : viandas.values()) {
+			System.out.println(vianda.getCodigo() + " | " + vianda.getDescripcion() + " | " + vianda.getPrecio_unitario());
+		}
+    }
+    
+    
 }
