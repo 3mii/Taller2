@@ -37,6 +37,7 @@ import java.rmi.RemoteException;
 import java.util.Properties;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JScrollPane;
@@ -58,8 +59,6 @@ public class Principal extends JFrame {
 	private static ControladorViandasVenta contrViandasVenta;
 	private static Principal ventana = null;
 	
-	
-
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -107,10 +106,8 @@ public class Principal extends JFrame {
 		contentPane.setLayout(new CardLayout(0, 0));
 		
 		Inicio();
+		FinalizarVenta();
 		
-		for (Component comp : contentPane.getComponents()) {
-			System.out.println(comp.getName());
-		}
 	}
 	
 	private void Inicio() {
@@ -573,7 +570,6 @@ public class Principal extends JFrame {
 		try {
 			contrViandasVenta.CargarVentas(cmbxVenta);
 		} catch (Exception ex) {
-			System.out.println(ex.getMessage());
 		}
 		pnlViandaAVenta.add(cmbxVenta);
 		
@@ -901,6 +897,29 @@ public class Principal extends JFrame {
 		JButton btnVolver = new JButton("<-- Volver al inicio");
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlFinalizarVenta.add(btnVolver);
+		
+		JComboBox cmbxVenta = new JComboBox();
+		cmbxVenta.setBounds(243, 107, 202, 20);
+		pnlFinalizarVenta.add(cmbxVenta);
+		
+		JLabel lblVenta = new JLabel("Venta");
+		lblVenta.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblVenta.setForeground(Color.WHITE);
+		lblVenta.setBounds(187, 110, 46, 14);
+		pnlFinalizarVenta.add(lblVenta);
+		
+		JRadioButton rdbtnConfirmar = new JRadioButton("Confirmar");
+		rdbtnConfirmar.setBounds(210, 170, 109, 23);
+		pnlFinalizarVenta.add(rdbtnConfirmar);
+		
+		JRadioButton rdbtnCancelar = new JRadioButton("Cancelar");
+		rdbtnCancelar.setBounds(335, 170, 109, 23);
+		pnlFinalizarVenta.add(rdbtnCancelar);
+		
+		ButtonGroup buttonGroup = new ButtonGroup();
+		buttonGroup.add(rdbtnCancelar);
+		buttonGroup.add(rdbtnConfirmar);
+		
 		btnVolver.addActionListener(Navegacion);
 		btnVolver.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -948,5 +967,4 @@ public class Principal extends JFrame {
 				JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
 		}
 	};
-	
 }
