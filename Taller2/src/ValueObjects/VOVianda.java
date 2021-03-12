@@ -41,6 +41,11 @@ public class VOVianda implements Serializable{
 	public void setPrecioUnitario(float precioUnitario) {
 		this.precioUnitario = precioUnitario;
 	}
+
+	@Override
+	public String toString() {
+		return codigo + " | $" + precioUnitario;
+	}
 	
 	
 }

@@ -239,6 +239,10 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     	return existe;
     }
     
+    public int getCantidadViandasVenta(int codigo) {
+    	return ventas.get(codigo).getViandas().getCantidadUnidades();
+    }
+    
     //Estos metodos transforman los OBJETOS en VALUE OBJECTS.
     
     private VOVianda toValueObject(Vianda vianda) {
@@ -266,7 +270,7 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     }
     
     private VOVenta toValueObject(Venta venta) {
-    	return new VOVenta(venta.getCodigo(), venta.getFecha(), venta.getHora(), venta.getDireccion(), venta.isPendiente(), toValueObject(venta.getViandas()));
+    	return new VOVenta(venta.getCodigo(), venta.getFecha(), venta.getHora(), venta.getDireccion(), venta.isPendiente(), toValueObject(venta.getViandas()), venta.getMonto());
     }
     
     private VOControladora toValueObject(Controladora controladora) {
@@ -315,9 +319,9 @@ public class Controladora extends UnicastRemoteObject implements IControladora{
     
     private Venta toObject(VOVenta voventa, boolean conViandas) {
         if(conViandas)
-    		return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion(), toObject(voventa.getViandas()));
+    		return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion(), toObject(voventa.getViandas()), voventa.getMonto());
         else
-        	return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion());
+        	return new Venta(voventa.getCodigo(), voventa.getFecha(), voventa.getHora(), voventa.getDireccion(), voventa.getMonto());
     }
     
     private Controladora toObject(VOControladora vocontroladora) throws RemoteException, MalformedURLException {

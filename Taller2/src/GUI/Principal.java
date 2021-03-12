@@ -5,12 +5,16 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import Excepciones.FechaIncorrectaException;
+import Excepciones.VentaVaciaException;
 import Excepciones.ViandaVaciaException;
-import Excepciones.ViandaYaExisteException;
 import GUI.Controladores.*;
+import ValueObjects.VOVenta;
+import ValueObjects.VOVianda;
 
 import javax.swing.SwingConstants;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 
 import javax.swing.JButton;
@@ -31,14 +35,30 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.Properties;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JScrollPane;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.ListSelectionModel;
+import javax.swing.JComboBox;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 
 public class Principal extends JFrame {
 
 	private JPanel contentPane;
+	private JPanel pnlInicio;
 	private static boolean conectado;
 	private static ControladorIngresarVianda contrIngresarVianda;
 	private static ControladorGuardarCambios contrGuardarCambios;
+	private static ControladorIniciarVenta contrIniciarVenta;
+	private static ControladorListarVentas contrListarVentas;
+	private static ControladorViandasVenta contrViandasVenta;
 	private static Principal ventana = null;
+	
+	
 
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
@@ -52,6 +72,9 @@ public class Principal extends JFrame {
 		try {
 			contrIngresarVianda = new ControladorIngresarVianda();
 			contrGuardarCambios = new ControladorGuardarCambios();
+			contrIniciarVenta = new ControladorIniciarVenta();
+			contrListarVentas = new ControladorListarVentas();
+			contrViandasVenta = new ControladorViandasVenta();
 			conectado = true;
 
 			if(ventana == null) {
@@ -85,24 +108,13 @@ public class Principal extends JFrame {
 		
 		Inicio();
 		
-		IngresarViandas();
-		
-		IniciarVenta();
-		
-		ViandaAVenta();
-		
-		ListarVentas();
-		
-		ViandasDeVenta();
-		 
-		EliminarVianda();
-		
-		FinalizarVenta();
+		for (Component comp : contentPane.getComponents()) {
+			System.out.println(comp.getName());
+		}
 	}
 	
 	private void Inicio() {
-		
-		JPanel pnlInicio = new JPanel();
+		pnlInicio = new JPanel();
 		pnlInicio.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlInicio, "<-- Volver al inicio");
 		pnlInicio.setLayout(null);
@@ -197,8 +209,11 @@ public class Principal extends JFrame {
 						contrGuardarCambios.GuardarCambios();
 					else
 						JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
-				} catch (IOException ex) {
-					JOptionPane.showMessageDialog(ventana, ex.getMessage());
+				}catch(IOException ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					contentPane.remove(pnlInicio);
+					Inicio();
 				}
 			}
 		});
@@ -404,6 +419,12 @@ public class Principal extends JFrame {
 		pnlIngresarViandas.add(lblErrDescAdicional);
 		
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlIngresarViandas);
+			}
+		});
 		
 		rdbtnVegetariana.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -426,53 +447,48 @@ public class Principal extends JFrame {
 		btnIngresar.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String errores="";
-				if(rdbtnVegetariana.isSelected()) {
-					try {
+				try {
+					if(rdbtnVegetariana.isSelected())
 						errores = contrIngresarVianda.IngresarVegetariana(txtCodigo.getText(), txtDescripcion.getText(), txtPrecio.getText(), rdbtnOvolactea.isSelected(), txtDescAdicional.getText());
-					} catch (Exception ex) {
-						errores = ex.getMessage();
-					}
-				}else {
-					try {
+					else
 						errores = contrIngresarVianda.IngresarVianda(txtCodigo.getText(), txtDescripcion.getText(), txtPrecio.getText());
-					} catch (RemoteException | ViandaVaciaException | ViandaYaExisteException ex) {
-						errores = ex.getMessage();
-					}
+					
+					if(errores.isEmpty()) {
+						contentPane.remove(pnlIngresarViandas);
+						IngresarViandas();
+						CardLayout card = (CardLayout)contentPane.getLayout();
+						card.show(contentPane, "Ingresar vianda");
+					}else if(errores.contains("Codigo")) {
+						lblErrCodigo.setText("Campo obligatorio.");
+						lblErrCodigo.setVisible(true);
+					}else if(errores.contains("Existe")) {
+						lblErrCodigo.setText("Ya existe una vianda con el codigo ingresado.");
+						lblErrCodigo.setVisible(true);
+					}else
+						lblErrCodigo.setVisible(false);
+					
+					if(errores.contains("Descripcion")) {
+						lblErrDescripcion.setVisible(true);
+					}else
+						lblErrDescripcion.setVisible(false);
+					
+					if(errores.contains("Precio")) {
+						lblErrPrecio.setVisible(true);
+					}else
+						lblErrPrecio.setVisible(false);
+					
+					if(errores.contains("descAdicional")) {
+						lblErrDescAdicional.setVisible(true);
+					}else
+						lblErrDescAdicional.setVisible(false);
+				}catch(Exception ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					contentPane.remove(pnlIngresarViandas);
+					contentPane.remove(pnlInicio);
+					Inicio();
 				}
-				
-				if(errores.contains("Codigo")) {
-					lblErrCodigo.setText("Campo obligatorio.");
-					lblErrCodigo.setVisible(true);
-				}else if(errores.contains("Existe")) {
-					lblErrCodigo.setText("Ya existe una vianda con el codigo ingresado.");
-					lblErrCodigo.setVisible(true);
-				}else
-					lblErrCodigo.setVisible(false);
-				
-				if(errores.contains("Descripcion")) {
-					lblErrDescripcion.setVisible(true);
-				}else
-					lblErrDescripcion.setVisible(false);
-				
-				if(errores.contains("Precio")) {
-					lblErrPrecio.setVisible(true);
-				}else
-					lblErrPrecio.setVisible(false);
-				
-				if(errores.contains("descAdicional")) {
-					lblErrDescAdicional.setVisible(true);
-				}else
-					lblErrDescAdicional.setVisible(false);
-				
-				System.out.println(errores);
-				if(errores.isEmpty()) {
-					txtCodigo.setText("");
-					txtDescripcion.setText("");
-					txtPrecio.setText("");
-					rdbtnOvolactea.setSelected(false);
-					txtDescAdicional.setText("");
-					JOptionPane.showMessageDialog(pnlIngresarViandas, "Vianda ingresada con éxito.");
-				}	
+					
 			}
 		});
 		
@@ -489,13 +505,57 @@ public class Principal extends JFrame {
 		pnlIniciarVenta.add(btnVolver_1);
 		
 		btnVolver_1.addActionListener(Navegacion);
+		btnVolver_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlIniciarVenta);
+			}
+		});
 		
 		JLabel lblDireccion = new JLabel("Direccion");
 		lblDireccion.setForeground(Color.WHITE);
 		lblDireccion.setHorizontalAlignment(SwingConstants.TRAILING);
-		lblDireccion.setBounds(131, 125, 46, 14);
+		lblDireccion.setBounds(244, 156, 67, 14);
 		pnlIniciarVenta.add(lblDireccion);
 		
+		JTextField txtDireccion;
+		txtDireccion = new JTextField();
+		txtDireccion.setBounds(322, 153, 124, 20);
+		pnlIniciarVenta.add(txtDireccion);
+		txtDireccion.setColumns(10);
+		
+		JLabel lblErrDireccion = new JLabel("Campo obligatorio");
+		lblErrDireccion.setVisible(false);
+		lblErrDireccion.setForeground(Color.RED);
+		lblErrDireccion.setBounds(456, 156, 152, 14);
+		pnlIniciarVenta.add(lblErrDireccion);
+		
+		JButton btnIngresar_1 = new JButton("Ingresar");
+		btnIngresar_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					String errores = contrIniciarVenta.IniciarVenta(txtDireccion.getText());
+					if(errores.isEmpty()) {
+						JOptionPane.showMessageDialog(ventana, "Venta ingresada con éxito.");
+						IniciarVenta();
+						contentPane.remove(pnlIniciarVenta);
+					}else if(errores.contains("Direccion"))
+						lblErrDireccion.setVisible(true);
+					else
+						lblErrDireccion.setVisible(false);
+				} catch (FechaIncorrectaException ex) {
+					JOptionPane.showMessageDialog(ventana, ex.getMessage());
+				} catch(IOException | VentaVaciaException ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					contentPane.remove(pnlIniciarVenta);
+					contentPane.remove(pnlInicio);
+					Inicio();
+				}
+			}
+		});
+		btnIngresar_1.setBounds(315, 184, 89, 23);
+		pnlIniciarVenta.add(btnIngresar_1);
 	}
 	
 	private void ViandaAVenta() {
@@ -507,33 +567,313 @@ public class Principal extends JFrame {
 		JButton btnVolver = new JButton("<-- Volver al inicio");
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlViandaAVenta.add(btnVolver);
+		
+		JComboBox<VOVenta> cmbxVenta = new JComboBox<VOVenta>();
+		cmbxVenta.setBounds(254, 121, 200, 20);
+		try {
+			contrViandasVenta.CargarVentas(cmbxVenta);
+		} catch (Exception ex) {
+			System.out.println(ex.getMessage());
+		}
+		pnlViandaAVenta.add(cmbxVenta);
+		
+		JSpinner spnCantidad = new JSpinner();
+		spnCantidad.setModel(new SpinnerNumberModel(0, 0, 30, 1));
+		spnCantidad.setBounds(254, 294, 51, 20);
+		pnlViandaAVenta.add(spnCantidad);
+		
+		JTextPane txtDescAdicional = new JTextPane();
+		txtDescAdicional.setBounds(254, 214, 200, 56);
+		pnlViandaAVenta.add(txtDescAdicional);
+		
+		JComboBox<VOVianda> cmbxVianda = new JComboBox<VOVianda>();
+		cmbxVianda.setBounds(254, 168, 200, 20);
+		
+		try {
+			contrViandasVenta.CargarViandas(cmbxVianda);
+		} catch (Exception ex) {
+			
+		}
+	
+		pnlViandaAVenta.add(cmbxVianda);
+		
+		JButton btnAgregar = new JButton("Agregar");
+		
+		btnAgregar.setBounds(311, 340, 89, 23);
+		pnlViandaAVenta.add(btnAgregar);
+		
+		JLabel lblVenta = new JLabel("Venta");
+		lblVenta.setForeground(Color.WHITE);
+		lblVenta.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblVenta.setBounds(127, 124, 117, 14);
+		pnlViandaAVenta.add(lblVenta);
+		
+		JLabel lblVianda = new JLabel("Vianda");
+		lblVianda.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblVianda.setForeground(Color.WHITE);
+		lblVianda.setBounds(127, 171, 117, 14);
+		pnlViandaAVenta.add(lblVianda);
+		
+		JLabel lblObservacion = new JLabel("Observaci\u00F3n");
+		lblObservacion.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblObservacion.setForeground(Color.WHITE);
+		lblObservacion.setBounds(127, 214, 117, 14);
+		pnlViandaAVenta.add(lblObservacion);
+		
+		JLabel lblCantidad = new JLabel("Cantidad");
+		lblCantidad.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblCantidad.setForeground(Color.WHITE);
+		lblCantidad.setBounds(127, 297, 117, 14);
+		pnlViandaAVenta.add(lblCantidad);
+		
+		JLabel lblErrVenta = new JLabel("Campo obligatorio");
+		lblErrVenta.setVisible(false);
+		lblErrVenta.setForeground(Color.RED);
+		lblErrVenta.setBounds(464, 124, 193, 14);
+		pnlViandaAVenta.add(lblErrVenta);
+		
+		JLabel lblErrVianda = new JLabel("Campo obligatorio");
+		lblErrVianda.setVisible(false);
+		lblErrVianda.setForeground(Color.RED);
+		lblErrVianda.setBounds(464, 171, 193, 14);
+		pnlViandaAVenta.add(lblErrVianda);
+		
+		JLabel lblErrObservacion = new JLabel("Campo obligatorio");
+		lblErrObservacion.setVisible(false);
+		lblErrObservacion.setForeground(Color.RED);
+		lblErrObservacion.setBounds(464, 214, 193, 14);
+		pnlViandaAVenta.add(lblErrObservacion);
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlViandaAVenta);
+			}
+		});
+		cmbxVenta.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				VOVenta venta = ((VOVenta)((JComboBox) e.getSource()).getSelectedItem());
+				try {
+					contrViandasVenta.CargarCantidad(spnCantidad, venta.getCodigo());
+				} catch (RemoteException ex) {
+					
+				}
+			}
+		});
+		btnAgregar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					String errores = contrViandasVenta.IngresarViandaVenta(cmbxVenta.getSelectedItem(), cmbxVianda.getSelectedItem(), txtDescAdicional.getText(), (Integer)spnCantidad.getValue());
+					
+					if(errores.contains("Venta"))
+						lblErrVenta.setVisible(true);
+					else
+						lblErrVenta.setVisible(false);
+					
+					if(errores.contains("Vianda"))
+						lblErrVianda.setVisible(true);
+					else
+						lblErrVianda.setVisible(false);
+					
+					if(errores.contains("Observacion"))
+						lblErrObservacion.setVisible(true);
+					else
+						lblErrObservacion.setVisible(false);
+					
+					if(errores.isEmpty()) {
+						ViandaAVenta();
+						contentPane.remove(pnlViandaAVenta);
+					}
+					
+				} catch (Exception ex) {
+					
+				}
+			}
+		});
 	}
-
+		
 	private void ListarVentas() {
 		JPanel pnlListarVentas = new JPanel();
 		pnlListarVentas.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlListarVentas, "Listar ventas");
-		pnlListarVentas.setLayout(null);
 		pnlListarVentas.setName("Listar ventas");
 		JButton btnVolver = new JButton("<-- Volver al inicio");
-		btnVolver.setBounds(10, 11, 137, 23);
-		pnlListarVentas.add(btnVolver);
+		
+		JScrollPane scrlVentas = new JScrollPane();
+		GroupLayout gl_pnlListarVentas = new GroupLayout(pnlListarVentas);
+		gl_pnlListarVentas.setHorizontalGroup(
+			gl_pnlListarVentas.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlListarVentas.createSequentialGroup()
+					.addGroup(gl_pnlListarVentas.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_pnlListarVentas.createSequentialGroup()
+							.addGap(10)
+							.addComponent(btnVolver, GroupLayout.PREFERRED_SIZE, 137, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_pnlListarVentas.createSequentialGroup()
+							.addGap(29)
+							.addComponent(scrlVentas, GroupLayout.PREFERRED_SIZE, 699, GroupLayout.PREFERRED_SIZE)))
+					.addContainerGap(33, Short.MAX_VALUE))
+		);
+		gl_pnlListarVentas.setVerticalGroup(
+			gl_pnlListarVentas.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlListarVentas.createSequentialGroup()
+					.addGap(11)
+					.addComponent(btnVolver)
+					.addGap(18)
+					.addComponent(scrlVentas, GroupLayout.PREFERRED_SIZE, 417, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(29, Short.MAX_VALUE))
+		);
+		
+
+		JTable tblVentas;
+		tblVentas = new JTable();
+		tblVentas.setRequestFocusEnabled(false);
+		tblVentas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		tblVentas.setModel(new DefaultTableModel(
+			new Object[][] {
+			},
+			new String[] {
+				"Numero", "Fecha", "Hora", "Direccion", "Monto ($)", "Estado"
+			}
+		) {
+			Class[] columnTypes = new Class[] {
+				Integer.class, String.class, String.class, String.class, Float.class, String.class
+			};
+			public Class getColumnClass(int columnIndex) {
+				return columnTypes[columnIndex];
+			}
+			boolean[] columnEditables = new boolean[] {
+				false, false, false, false, false, false
+			};
+			public boolean isCellEditable(int row, int column) {
+				return columnEditables[column];
+			}
+		});
+		tblVentas.getColumnModel().getColumn(0).setResizable(false);
+		tblVentas.getColumnModel().getColumn(1).setResizable(false);
+		tblVentas.getColumnModel().getColumn(2).setResizable(false);
+		tblVentas.getColumnModel().getColumn(3).setResizable(false);
+		tblVentas.getColumnModel().getColumn(4).setResizable(false);
+		tblVentas.getColumnModel().getColumn(5).setResizable(false);
+		
+		try {
+			contrListarVentas.CargarVentas(tblVentas);
+		} catch (Exception ex) {
+		}
+		
+		scrlVentas.setViewportView(tblVentas);
+		pnlListarVentas.setLayout(gl_pnlListarVentas);
+		
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlListarVentas);
+			}
+		});
 	}
 	
 	private void ViandasDeVenta() {
 		JPanel pnlViandasDeVenta = new JPanel();
 		pnlViandasDeVenta.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlViandasDeVenta, "Viandas de venta");
-		pnlViandasDeVenta.setLayout(null);
 		pnlViandasDeVenta.setName("Viandas de venta");
 		JButton btnVolver = new JButton("<-- Volver al inicio");
-		btnVolver.setBounds(10, 11, 137, 23);
-		pnlViandasDeVenta.add(btnVolver);
+		
+		JComboBox cmbxVenta = new JComboBox();
+		
+		try {
+			contrViandasVenta.CargarVentas(cmbxVenta);
+		} catch (RemoteException ex) {
+			
+		}
+		
+			
+			JScrollPane scrlViandas = new JScrollPane();
+			
+			JLabel lblVenta_1 = new JLabel("Venta");
+			lblVenta_1.setForeground(Color.WHITE);
+			GroupLayout gl_pnlViandasDeVenta = new GroupLayout(pnlViandasDeVenta);
+			gl_pnlViandasDeVenta.setHorizontalGroup(
+				gl_pnlViandasDeVenta.createParallelGroup(Alignment.LEADING)
+					.addGroup(gl_pnlViandasDeVenta.createSequentialGroup()
+						.addGroup(gl_pnlViandasDeVenta.createParallelGroup(Alignment.LEADING)
+							.addGroup(gl_pnlViandasDeVenta.createSequentialGroup()
+								.addGap(10)
+								.addComponent(btnVolver, GroupLayout.PREFERRED_SIZE, 137, GroupLayout.PREFERRED_SIZE))
+							.addGroup(gl_pnlViandasDeVenta.createSequentialGroup()
+								.addContainerGap()
+								.addComponent(scrlViandas, GroupLayout.DEFAULT_SIZE, 741, Short.MAX_VALUE))
+							.addGroup(gl_pnlViandasDeVenta.createSequentialGroup()
+								.addGap(58)
+								.addComponent(lblVenta_1)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
+								.addComponent(cmbxVenta, GroupLayout.PREFERRED_SIZE, 184, GroupLayout.PREFERRED_SIZE)))
+						.addContainerGap())
+			);
+			gl_pnlViandasDeVenta.setVerticalGroup(
+				gl_pnlViandasDeVenta.createParallelGroup(Alignment.LEADING)
+					.addGroup(gl_pnlViandasDeVenta.createSequentialGroup()
+						.addGap(11)
+						.addComponent(btnVolver)
+						.addPreferredGap(ComponentPlacement.RELATED, 42, Short.MAX_VALUE)
+						.addGroup(gl_pnlViandasDeVenta.createParallelGroup(Alignment.BASELINE)
+							.addComponent(cmbxVenta, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+							.addComponent(lblVenta_1))
+						.addGap(36)
+						.addComponent(scrlViandas, GroupLayout.PREFERRED_SIZE, 355, GroupLayout.PREFERRED_SIZE)
+						.addContainerGap())
+			);
+			
+			JTable tblViandas = new JTable();;
+			 
+			tblViandas.setModel(new DefaultTableModel(
+				new Object[][] {
+				},
+				new String[] {
+					"Codigo", "Descripcion", "Precio unit. ($)", "Cant. Unidades", "Observacion"
+				}
+			) {
+				Class[] columnTypes = new Class[] {
+					String.class, String.class, Float.class, Integer.class, String.class
+				};
+				public Class getColumnClass(int columnIndex) {
+					return columnTypes[columnIndex];
+				}
+				boolean[] columnEditables = new boolean[] {
+					false, false, false, false, false
+				};
+				public boolean isCellEditable(int row, int column) {
+					return columnEditables[column];
+				}
+			});
+			tblViandas.getColumnModel().getColumn(0).setResizable(false);
+			tblViandas.getColumnModel().getColumn(1).setResizable(false);
+			tblViandas.getColumnModel().getColumn(2).setResizable(false);
+			tblViandas.getColumnModel().getColumn(3).setResizable(false);
+			tblViandas.getColumnModel().getColumn(4).setResizable(false);
+			scrlViandas.setViewportView(tblViandas);
+			pnlViandasDeVenta.setLayout(gl_pnlViandasDeVenta);
+		
+		cmbxVenta.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					VOVenta venta = ((VOVenta)((JComboBox) e.getSource()).getSelectedItem());
+					contrViandasVenta.CargarViandas(tblViandas, venta.getCodigo());
+				} catch (Exception ex) {
+				}
+			}
+		});
+		
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlViandasDeVenta);
+			}
+		});
 	}
-	
+	 
 	private void EliminarVianda() {
 		JPanel pnlEliminarVianda = new JPanel();
 		pnlEliminarVianda.setBackground(Color.DARK_GRAY);
@@ -544,11 +884,17 @@ public class Principal extends JFrame {
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlEliminarVianda.add(btnVolver);
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlEliminarVianda);
+			}
+		});
 	}
 	
 	private void FinalizarVenta() {
-		JPanel pnlFinalizarVenta = new JPanel();
-		pnlFinalizarVenta.setBackground(Color.DARK_GRAY);
+		
+		JPanel pnlFinalizarVenta = new JPanel();pnlFinalizarVenta.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlFinalizarVenta, "Finalizar venta");
 		pnlFinalizarVenta.setLayout(null);
 		pnlFinalizarVenta.setName("Finalizar venta");
@@ -556,17 +902,51 @@ public class Principal extends JFrame {
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlFinalizarVenta.add(btnVolver);
 		btnVolver.addActionListener(Navegacion);
+		btnVolver.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Inicio();
+				contentPane.remove(pnlFinalizarVenta);
+			}
+		});
 	}
 	
 	private ActionListener Navegacion = new ActionListener() {
 		public void actionPerformed(ActionEvent e) {
 			if(conectado) {
-				CardLayout card = (CardLayout)contentPane.getLayout();
-				card.show(contentPane, ((JButton)e.getSource()).getText());
+				String opcion = ((JButton)e.getSource()).getText();
+				switch(opcion) {
+				case "Ingresar vianda":
+					IngresarViandas();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Iniciar venta":
+					IniciarVenta();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Agregar vianda a venta":
+					ViandaAVenta();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Listar ventas":
+					ListarVentas();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Viandas de venta":
+					ViandasDeVenta();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Eliminar vianda de venta":
+					EliminarVianda();
+					contentPane.remove(pnlInicio);
+					break;
+				case "Finalizar venta":
+					FinalizarVenta();
+					contentPane.remove(pnlInicio);
+					break;
+				}
 			}else
 				JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
 		}
 	};
 	
 }
-

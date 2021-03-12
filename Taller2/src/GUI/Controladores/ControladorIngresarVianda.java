@@ -73,5 +73,3 @@ public class ControladorIngresarVianda {
 		return errores;
 	}
 }
-
-

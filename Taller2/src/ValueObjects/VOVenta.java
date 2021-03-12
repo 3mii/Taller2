@@ -14,6 +14,7 @@ public class VOVenta implements Serializable{
     private String direccion;
     private boolean pendiente;
     private VOViandas_Venta viandas;
+    private float monto;
     
     public VOVenta() {
     	super();
@@ -25,15 +26,17 @@ public class VOVenta implements Serializable{
         this.fecha = LocalDate.now();
         this.hora = LocalTime.now();
         this.viandas = new VOViandas_Venta();
+        this.monto = 0;
     }
     
-    public VOVenta(int codigo, LocalDate fecha, LocalTime hora, String direccion, boolean pendiente, VOViandas_Venta viandas) {
+    public VOVenta(int codigo, LocalDate fecha, LocalTime hora, String direccion, boolean pendiente, VOViandas_Venta viandas, float monto) {
     	this.codigo = codigo;
         this.direccion = direccion;
         this.pendiente = pendiente;
         this.fecha = fecha;
         this.hora = hora;
         this.viandas = viandas;
+        this.monto = monto;
     }
     
 	public int getCodigo() {
@@ -83,36 +86,48 @@ public class VOVenta implements Serializable{
 		this.viandas = viandas;
 	}
 	
-	 public String getFechaString() { //Temporal
-	        //Mostrar Fecha
-	    	String fechatmp = "";
-	        if (this.fecha.getDayOfMonth() < 10) {
-	            fechatmp = fechatmp + "0";
-	        }
-	        fechatmp = fechatmp + this.fecha.getDayOfMonth() + "/";
-	        if (this.fecha.getMonthValue() < 10) {
-	        	fechatmp = fechatmp + "0";
-	        }
-	        fechatmp = fechatmp + this.fecha.getMonthValue() + "/";
-	        fechatmp = fechatmp + this.fecha.getYear();
-	        return fechatmp;
-	    }
+	public float getMonto() {
+		return monto;
+	}
+	
+	public void setHora(float monto) {
+		this.monto = monto;
+	}
+	
+	public String getFechaString() { //Temporal
+        //Mostrar Fecha
+    	String fechatmp = "";
+        if (this.fecha.getDayOfMonth() < 10) {
+            fechatmp = fechatmp + "0";
+        }
+        fechatmp = fechatmp + this.fecha.getDayOfMonth() + "/";
+        if (this.fecha.getMonthValue() < 10) {
+        	fechatmp = fechatmp + "0";
+        }
+        fechatmp = fechatmp + this.fecha.getMonthValue() + "/";
+        fechatmp = fechatmp + this.fecha.getYear();
+        return fechatmp;
+    }
 
-	    public String getHoraString() { //Temporal
-	        //Mostrar Hora
-	    	String horatmp = "";
-	        if (this.hora.getHour() < 10) {
-	            horatmp = horatmp + "0";
-	        }
-	        horatmp = horatmp + this.hora.getHour() + ":";
-	        if (this.hora.getMinute() < 10) {
-	        	horatmp = horatmp + "0";
-	        }
-	        horatmp = horatmp + this.hora.getMinute();
-	        return horatmp;
-	    }
+    public String getHoraString() { //Temporal
+        //Mostrar Hora
+    	String horatmp = "";
+        if (this.hora.getHour() < 10) {
+            horatmp = horatmp + "0";
+        }
+        horatmp = horatmp + this.hora.getHour() + ":";
+        if (this.hora.getMinute() < 10) {
+        	horatmp = horatmp + "0";
+        }
+        horatmp = horatmp + this.hora.getMinute();
+        return horatmp;
+    }
 
-    
-    
+	@Override
+	public String toString() {
+		return codigo + " | " + direccion + " | $" + monto;
+	}
+	    
+	
     
 }

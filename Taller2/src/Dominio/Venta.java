@@ -23,23 +23,26 @@ public class Venta {
     private String direccion;
     private boolean pendiente;
     private Viandas_Venta viandas;
+    private float monto;
     
-    public Venta(int codigo, LocalDate fecha, LocalTime hora, String direccion) {
+    public Venta(int codigo, LocalDate fecha, LocalTime hora, String direccion, float monto) {
     	this.codigo = codigo;
         this.direccion = direccion;
         this.pendiente = true;
         this.fecha = fecha;
         this.hora = hora;
         this.viandas = new Viandas_Venta();
+        this.monto = monto;
     }
     
-    public Venta(int codigo, LocalDate fecha, LocalTime hora, String direccion, Viandas_Venta viandas) {
+    public Venta(int codigo, LocalDate fecha, LocalTime hora, String direccion, Viandas_Venta viandas, float monto) {
     	this.codigo = codigo;
         this.direccion = direccion;
         this.pendiente = true;
         this.fecha = fecha;
         this.hora = hora;
         this.viandas = viandas;
+        this.monto = monto;
     }
 
     public Venta(int codigo, String direccion) {
@@ -49,6 +52,7 @@ public class Venta {
         this.fecha = LocalDate.now();
         this.hora = LocalTime.now();
         this.viandas = new Viandas_Venta();
+        this.monto = 0;
     }
 
     public int getCodigo() {
@@ -99,8 +103,17 @@ public class Venta {
         this.viandas = ventas;
     }
     
+    public float getMonto() {
+        return monto;
+    }
+
+    public void setMonto(float monto) {
+        this.monto = monto;
+    }
+    
     public void addVianda(Vianda_Venta vianda) throws LimiteDeViandasException {
     	this.viandas.add(vianda);
+    	this.monto+= vianda.getCantidad() * vianda.getVianda().getPrecio_unitario();
     }
     
     public void removeVianda(String codigo, int cantidad) throws VentaNoTieneViandaException {
@@ -142,7 +155,6 @@ public class Venta {
 				+ ", Pendiente=" + pendiente + ", Viandas=" + viandas;
 	}
 
-	
 	@Override
 	public boolean equals(Object obj) {
 		
@@ -154,6 +166,5 @@ public class Venta {
 				fecha == venta.getFecha() &&
 				hora == venta.getHora();
 	}
-    
     
 }

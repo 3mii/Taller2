@@ -49,4 +49,6 @@ public interface IControladora extends Remote{
     
     public boolean ViandaExiste(String codigo) throws RemoteException;
     
+    public int getCantidadViandasVenta(int codigo) throws RemoteException;
+    
 }
