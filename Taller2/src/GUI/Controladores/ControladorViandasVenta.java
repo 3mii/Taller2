@@ -43,7 +43,7 @@ public class ControladorViandasVenta {
 	public void CargarVentas(JComboBox<VOVenta> combo) throws RemoteException{
 		combo.removeAllItems();
 		for (VOVenta venta : contr.getVentas()) {
-			if(contr.getCantidadViandasVenta(venta.getCodigo())<30)
+			if(contr.getCantidadViandasVenta(venta.getCodigo())<30 && venta.isPendiente())
 				combo.addItem(venta);
 		}
 		combo.setSelectedIndex(-1);
@@ -78,8 +78,9 @@ public class ControladorViandasVenta {
 	}
 	
 	public void CargarViandas(JTable tbl, int codVenta) throws RemoteException, VentaNoExisteException {
+		DefaultTableModel dm = (DefaultTableModel) tbl.getModel();
+	    dm.getDataVector().removeAllElements();
 		for (VOVianda_Venta viandaVenta : contr.getViandasVenta(codVenta)) {
-			
 			Object[] fila = {
 					viandaVenta.getVianda().getCodigo(),
 					viandaVenta.getVianda().getDescripcion(),

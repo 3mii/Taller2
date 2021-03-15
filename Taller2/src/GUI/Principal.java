@@ -6,7 +6,11 @@ import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
 import Excepciones.FechaIncorrectaException;
+import Excepciones.VentaNoExisteException;
+import Excepciones.VentaNoTieneViandaException;
 import Excepciones.VentaVaciaException;
+import Excepciones.VentaYaConfirmadaException;
+import Excepciones.ViandaNoExisteException;
 import Excepciones.ViandaVaciaException;
 import GUI.Controladores.*;
 import ValueObjects.VOVenta;
@@ -46,6 +50,8 @@ import javax.swing.ListSelectionModel;
 import javax.swing.JComboBox;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
 
 public class Principal extends JFrame {
 
@@ -57,6 +63,8 @@ public class Principal extends JFrame {
 	private static ControladorIniciarVenta contrIniciarVenta;
 	private static ControladorListarVentas contrListarVentas;
 	private static ControladorViandasVenta contrViandasVenta;
+	private static ControladorFinalizarVenta contrFinalizarVenta;
+	private static ControladorEliminarViandasVenta contrEliminarViandaVenta;
 	private static Principal ventana = null;
 	
 	public static void main(String[] args) {
@@ -74,6 +82,8 @@ public class Principal extends JFrame {
 			contrIniciarVenta = new ControladorIniciarVenta();
 			contrListarVentas = new ControladorListarVentas();
 			contrViandasVenta = new ControladorViandasVenta();
+			contrFinalizarVenta = new ControladorFinalizarVenta();
+			contrEliminarViandaVenta = new ControladorEliminarViandasVenta();
 			conectado = true;
 
 			if(ventana == null) {
@@ -92,7 +102,7 @@ public class Principal extends JFrame {
 		}
 	}
 
-	public Principal() {
+	private Principal() {
 		
 		setBackground(Color.DARK_GRAY);
 		setResizable(false);
@@ -106,8 +116,6 @@ public class Principal extends JFrame {
 		contentPane.setLayout(new CardLayout(0, 0));
 		
 		Inicio();
-		FinalizarVenta();
-		
 	}
 	
 	private void Inicio() {
@@ -198,47 +206,6 @@ public class Principal extends JFrame {
 		lblServidor.setBackground(Color.DARK_GRAY);
 		lblServidor.setBounds(10, -7, 155, 32);
 		pnlServidor.add(lblServidor);
-		JButton btnGuardarCambios = new JButton("Guardar cambios");
-		btnGuardarCambios.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				try {
-					if(conectado)
-						contrGuardarCambios.GuardarCambios();
-					else
-						JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
-				}catch(IOException ex) {
-					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
-					conectado = false;
-					contentPane.remove(pnlInicio);
-					Inicio();
-				}
-			}
-		});
-		btnGuardarCambios.setBounds(10, 161, 155, 23);
-		pnlServidor.add(btnGuardarCambios);
-		
-		Properties prop = new Properties();
-		try {
-			prop.load(new FileInputStream("cfg/config.properties"));
-		} catch (IOException ex) {
-			
-		}
-		
-		String portValue = prop.getProperty("SERVER_PORT");
-		String ipValue = prop.getProperty("SERVER_IP");
-		
-		if(ipValue == null)
-			ipValue = "no encontrada";
-		if(portValue == null)
-			portValue = "no encontrado";
-		
-		JLabel lblIP = new JLabel("Direccion: " + ipValue);
-		lblIP.setBounds(10, 40, 155, 14);
-		pnlServidor.add(lblIP);
-		
-		JLabel lblPuerto = new JLabel("Puerto: " + portValue);
-		lblPuerto.setBounds(10, 66, 155, 14);
-		pnlServidor.add(lblPuerto);
 		
 		JLabel lblEstado = new JLabel("Conectado");
 		lblEstado.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -258,6 +225,49 @@ public class Principal extends JFrame {
 			lblEstado.setText("Desconectado");
 			lblEstadoIcono.setForeground(Color.RED);
 		}
+		
+		JButton btnGuardarCambios = new JButton("Guardar cambios");
+		btnGuardarCambios.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					if(conectado)
+						contrGuardarCambios.GuardarCambios();
+					else
+						JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
+				}catch(IOException ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					Inicio();
+					contentPane.remove(pnlInicio);
+				}
+			}
+		});
+		btnGuardarCambios.setBounds(10, 161, 155, 23);
+		pnlServidor.add(btnGuardarCambios);
+		
+		Properties prop = new Properties();
+		try {
+			prop.load(new FileInputStream("cfg/config.properties"));
+		} catch (IOException ex) {
+		}
+		
+		String portValue = prop.getProperty("SERVER_PORT");
+		String ipValue = prop.getProperty("SERVER_IP");
+		
+		if(ipValue == null)
+			ipValue = "no encontrada";
+		if(portValue == null)
+			portValue = "no encontrado";
+		
+		JLabel lblIP = new JLabel("Direccion: " + ipValue);
+		lblIP.setBounds(10, 40, 155, 14);
+		pnlServidor.add(lblIP);
+		
+		JLabel lblPuerto = new JLabel("Puerto: " + portValue);
+		lblPuerto.setBounds(10, 66, 155, 14);
+		pnlServidor.add(lblPuerto);
+		
+		
 		
 		pnlServidor.add(lblEstadoIcono);
 		
@@ -451,39 +461,37 @@ public class Principal extends JFrame {
 						errores = contrIngresarVianda.IngresarVianda(txtCodigo.getText(), txtDescripcion.getText(), txtPrecio.getText());
 					
 					if(errores.isEmpty()) {
-						contentPane.remove(pnlIngresarViandas);
+						JOptionPane.showMessageDialog(ventana, "Vianda ingresada con éxito.");
 						IngresarViandas();
-						CardLayout card = (CardLayout)contentPane.getLayout();
-						card.show(contentPane, "Ingresar vianda");
-					}else if(errores.contains("Codigo")) {
-						lblErrCodigo.setText("Campo obligatorio.");
-						lblErrCodigo.setVisible(true);
-					}else if(errores.contains("Existe")) {
-						lblErrCodigo.setText("Ya existe una vianda con el codigo ingresado.");
-						lblErrCodigo.setVisible(true);
-					}else
-						lblErrCodigo.setVisible(false);
-					
-					if(errores.contains("Descripcion")) {
-						lblErrDescripcion.setVisible(true);
-					}else
-						lblErrDescripcion.setVisible(false);
-					
-					if(errores.contains("Precio")) {
-						lblErrPrecio.setVisible(true);
-					}else
-						lblErrPrecio.setVisible(false);
-					
-					if(errores.contains("descAdicional")) {
-						lblErrDescAdicional.setVisible(true);
-					}else
-						lblErrDescAdicional.setVisible(false);
+						contentPane.remove(pnlIngresarViandas);
+					}else {
+						if(errores.contains("Codigo")) {
+							lblErrCodigo.setText("Campo obligatorio");
+							lblErrCodigo.setVisible(true);
+						}else if(errores.contains("Existe")) {
+							lblErrCodigo.setText("Ya existe una vianda con el codigo ingresado");
+							lblErrCodigo.setVisible(true);
+						}else
+							lblErrCodigo.setVisible(false);
+						if(errores.contains("Descripcion"))
+							lblErrDescripcion.setVisible(true);
+						else
+							lblErrDescripcion.setVisible(false);
+						if(errores.contains("Precio")) 
+							lblErrPrecio.setVisible(true);
+						else
+							lblErrPrecio.setVisible(false);
+						if(errores.contains("descAdicional")) 
+							lblErrDescAdicional.setVisible(true);
+						else
+							lblErrDescAdicional.setVisible(false);
+					}
 				}catch(Exception ex) {
 					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
 					conectado = false;
+					Inicio();
 					contentPane.remove(pnlIngresarViandas);
 					contentPane.remove(pnlInicio);
-					Inicio();
 				}
 					
 			}
@@ -536,10 +544,12 @@ public class Principal extends JFrame {
 						JOptionPane.showMessageDialog(ventana, "Venta ingresada con éxito.");
 						IniciarVenta();
 						contentPane.remove(pnlIniciarVenta);
-					}else if(errores.contains("Direccion"))
-						lblErrDireccion.setVisible(true);
-					else
-						lblErrDireccion.setVisible(false);
+					}else { 
+						if(errores.contains("Direccion"))
+							lblErrDireccion.setVisible(true);
+						else
+							lblErrDireccion.setVisible(false);
+					}
 				} catch (FechaIncorrectaException ex) {
 					JOptionPane.showMessageDialog(ventana, ex.getMessage());
 				} catch(IOException | VentaVaciaException ex) {
@@ -560,7 +570,6 @@ public class Principal extends JFrame {
 		pnlViandaAVenta.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlViandaAVenta, "Agregar vianda a venta");
 		pnlViandaAVenta.setLayout(null);
-		pnlViandaAVenta.setName("Agregar vianda a venta");
 		JButton btnVolver = new JButton("<-- Volver al inicio");
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlViandaAVenta.add(btnVolver);
@@ -661,27 +670,23 @@ public class Principal extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				try {
 					String errores = contrViandasVenta.IngresarViandaVenta(cmbxVenta.getSelectedItem(), cmbxVianda.getSelectedItem(), txtDescAdicional.getText(), (Integer)spnCantidad.getValue());
-					
-					if(errores.contains("Venta"))
-						lblErrVenta.setVisible(true);
-					else
-						lblErrVenta.setVisible(false);
-					
-					if(errores.contains("Vianda"))
-						lblErrVianda.setVisible(true);
-					else
-						lblErrVianda.setVisible(false);
-					
-					if(errores.contains("Observacion"))
-						lblErrObservacion.setVisible(true);
-					else
-						lblErrObservacion.setVisible(false);
-					
 					if(errores.isEmpty()) {
 						ViandaAVenta();
 						contentPane.remove(pnlViandaAVenta);
+					}else {
+						if(errores.contains("Venta"))
+							lblErrVenta.setVisible(true);
+						else
+							lblErrVenta.setVisible(false);
+						if(errores.contains("Vianda"))
+							lblErrVianda.setVisible(true);
+						else
+							lblErrVianda.setVisible(false);
+						if(errores.contains("Observacion"))
+							lblErrObservacion.setVisible(true);
+						else
+							lblErrObservacion.setVisible(false);
 					}
-					
 				} catch (Exception ex) {
 					
 				}
@@ -875,7 +880,121 @@ public class Principal extends JFrame {
 		pnlEliminarVianda.setBackground(Color.DARK_GRAY);
 		contentPane.add(pnlEliminarVianda, "Eliminar vianda de venta");
 		pnlEliminarVianda.setLayout(null);
-		pnlEliminarVianda.setName("Eliminar vianda de venta");
+		
+		JComboBox<VOVenta> cmbxVenta = new JComboBox<VOVenta>();
+		cmbxVenta.setBounds(254, 121, 200, 20);
+		pnlEliminarVianda.add(cmbxVenta);
+		
+		try {
+			contrEliminarViandaVenta.CargarVentas(cmbxVenta);
+		} catch (RemoteException ex) {
+			JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+			conectado = false;
+			Inicio();
+			contentPane.remove(pnlEliminarVianda);
+		}
+		
+		JSpinner spnCantidad = new JSpinner();
+		spnCantidad.setModel(new SpinnerNumberModel(0, 0, 30, 1));
+		spnCantidad.setBounds(254, 210, 51, 20);
+		pnlEliminarVianda.add(spnCantidad);
+		
+		JComboBox<VOVianda> cmbxVianda = new JComboBox<VOVianda>();
+		cmbxVianda.setBounds(254, 168, 200, 20);
+		pnlEliminarVianda.add(cmbxVianda);
+		
+
+		cmbxVenta.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					contrEliminarViandaVenta.CargarViandas(cmbxVianda, ((JComboBox)e.getSource()).getSelectedItem());
+				} catch (Exception ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					Inicio();
+					contentPane.remove(pnlEliminarVianda);
+				} 
+			}
+		});
+		
+		cmbxVianda.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				if(!e.getSource().toString().contains("invalid") && cmbxVenta.getSelectedItem() != null) {
+					try {
+						contrEliminarViandaVenta.CargarCantidad(spnCantidad, cmbxVenta.getSelectedItem(), ((JComboBox)e.getSource()).getSelectedItem());
+					} catch (Exception ex) {
+						JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+						conectado = false;
+						Inicio();
+						contentPane.remove(pnlEliminarVianda);
+					}
+				}
+			}
+		});
+		
+		JButton btnEliminar = new JButton("Eliminar");
+		btnEliminar.setBounds(311, 256, 89, 23);
+		pnlEliminarVianda.add(btnEliminar);
+		
+		JLabel lblVenta = new JLabel("Venta");
+		lblVenta.setForeground(Color.WHITE);
+		lblVenta.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblVenta.setBounds(127, 124, 117, 14);
+		pnlEliminarVianda.add(lblVenta);
+		
+		JLabel lblVianda = new JLabel("Vianda");
+		lblVianda.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblVianda.setForeground(Color.WHITE);
+		lblVianda.setBounds(127, 171, 117, 14);
+		pnlEliminarVianda.add(lblVianda);
+		
+		JLabel lblCantidad = new JLabel("Cantidad");
+		lblCantidad.setHorizontalAlignment(SwingConstants.TRAILING);
+		lblCantidad.setForeground(Color.WHITE);
+		lblCantidad.setBounds(127, 213, 117, 14);
+		pnlEliminarVianda.add(lblCantidad);
+		
+		JLabel lblErrVenta = new JLabel("Campo obligatorio");
+		lblErrVenta.setVisible(false);
+		lblErrVenta.setForeground(Color.RED);
+		lblErrVenta.setBounds(464, 124, 193, 14);
+		pnlEliminarVianda.add(lblErrVenta);
+		
+		JLabel lblErrVianda = new JLabel("Campo obligatorio");
+		lblErrVianda.setVisible(false);
+		lblErrVianda.setForeground(Color.RED);
+		lblErrVianda.setBounds(464, 171, 193, 14);
+		pnlEliminarVianda.add(lblErrVianda);
+		
+		btnEliminar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					String errores = contrEliminarViandaVenta.EliminarViandaVenta(cmbxVenta.getSelectedItem(), cmbxVianda.getSelectedItem(), (Integer)spnCantidad.getValue());
+					
+					if (errores.isEmpty()) {
+						JOptionPane.showMessageDialog(ventana, "Vianda removida con éxito.");
+						EliminarVianda();
+						contentPane.remove(pnlEliminarVianda);
+					}else {
+						if(errores.contains("Venta"))
+							lblErrVenta.setVisible(true);
+						else
+							lblErrVenta.setVisible(false);
+						if(errores.contains("Vianda"))
+							lblErrVianda.setVisible(true);
+						else
+							lblErrVianda.setVisible(false);
+					}
+				} catch (Exception ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					conectado = false;
+					Inicio();
+					contentPane.remove(pnlEliminarVianda);
+				}
+			}
+		});
+		
 		JButton btnVolver = new JButton("<-- Volver al inicio");
 		btnVolver.setBounds(10, 11, 137, 23);
 		pnlEliminarVianda.add(btnVolver);
@@ -886,6 +1005,8 @@ public class Principal extends JFrame {
 				contentPane.remove(pnlEliminarVianda);
 			}
 		});
+		
+		
 	}
 	
 	private void FinalizarVenta() {
@@ -909,18 +1030,65 @@ public class Principal extends JFrame {
 		pnlFinalizarVenta.add(lblVenta);
 		
 		JRadioButton rdbtnConfirmar = new JRadioButton("Confirmar");
-		rdbtnConfirmar.setBounds(210, 170, 109, 23);
+		rdbtnConfirmar.setBounds(243, 146, 95, 23);
 		pnlFinalizarVenta.add(rdbtnConfirmar);
 		
 		JRadioButton rdbtnCancelar = new JRadioButton("Cancelar");
-		rdbtnCancelar.setBounds(335, 170, 109, 23);
+		rdbtnCancelar.setBounds(350, 146, 95, 23);
 		pnlFinalizarVenta.add(rdbtnCancelar);
 		
 		ButtonGroup buttonGroup = new ButtonGroup();
 		buttonGroup.add(rdbtnCancelar);
 		buttonGroup.add(rdbtnConfirmar);
 		
-		btnVolver.addActionListener(Navegacion);
+		JButton btnFinalizar = new JButton("Finalizar");
+		btnFinalizar.setBounds(301, 192, 89, 23);
+		pnlFinalizarVenta.add(btnFinalizar);
+
+		JLabel lblErrVenta = new JLabel("Campo obligatorio");
+		lblErrVenta.setVisible(false);
+		lblErrVenta.setForeground(Color.RED);
+		lblErrVenta.setBounds(455, 110, 137, 14);
+		pnlFinalizarVenta.add(lblErrVenta);
+		
+		JLabel lblErrAccion = new JLabel("Campo obligatorio");
+		lblErrAccion.setVisible(false);
+		lblErrAccion.setForeground(Color.RED);
+		lblErrAccion.setBounds(455, 150, 171, 14);
+		pnlFinalizarVenta.add(lblErrAccion);
+		
+		try {
+			contrFinalizarVenta.CargarVentasPendientes(cmbxVenta);
+		} catch (RemoteException ex) {
+		}
+		
+		btnFinalizar.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					String errores = contrFinalizarVenta.FinalizarVenta(cmbxVenta.getSelectedItem(), rdbtnCancelar.isSelected(), rdbtnConfirmar.isSelected());
+					if(errores.isEmpty()) {
+						FinalizarVenta();
+						contentPane.remove(pnlFinalizarVenta);
+					}else {
+						if(errores.contains("Venta"))
+							lblErrVenta.setVisible(true);
+						else
+							lblErrVenta.setVisible(false);
+					
+						if(errores.contains("Accion"))
+							lblErrAccion.setVisible(true);
+						else
+							lblErrAccion.setVisible(false);
+					}
+				} catch (Exception ex) {
+					JOptionPane.showMessageDialog(ventana, "Error al acceder al servidor.");
+					contentPane.remove(pnlFinalizarVenta);
+					conectado = false;
+					Inicio();
+				}
+			}
+		});
+		
 		btnVolver.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				Inicio();
@@ -963,6 +1131,7 @@ public class Principal extends JFrame {
 					contentPane.remove(pnlInicio);
 					break;
 				}
+				
 			}else
 				JOptionPane.showMessageDialog(ventana, "Antes debe conectarse al servidor.");
 		}
