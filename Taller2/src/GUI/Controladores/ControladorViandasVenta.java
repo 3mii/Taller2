@@ -49,6 +49,15 @@ public class ControladorViandasVenta {
 		combo.setSelectedIndex(-1);
 	}
 	
+	public void CargarVentasConViandas(JComboBox<VOVenta> combo) throws RemoteException{
+		combo.removeAllItems();
+		for (VOVenta venta : contr.getVentas()) {
+			if(contr.getCantidadViandasVenta(venta.getCodigo())>0)
+				combo.addItem(venta);
+		}
+		combo.setSelectedIndex(-1);
+	}
+	
 	public void CargarViandas(JComboBox<VOVianda> combo) throws RemoteException{
 		combo.removeAllItems();
 		for (VOVianda vianda: contr.getViandas()) {
@@ -79,8 +88,9 @@ public class ControladorViandasVenta {
 	
 	public void CargarViandas(JTable tbl, int codVenta) throws RemoteException, VentaNoExisteException {
 		DefaultTableModel dm = (DefaultTableModel) tbl.getModel();
-	    dm.getDataVector().removeAllElements();
-		for (VOVianda_Venta viandaVenta : contr.getViandasVenta(codVenta)) {
+	    dm.setRowCount(0);
+	    
+    	for (VOVianda_Venta viandaVenta : contr.getViandasVenta(codVenta)) {
 			Object[] fila = {
 					viandaVenta.getVianda().getCodigo(),
 					viandaVenta.getVianda().getDescripcion(),
@@ -89,7 +99,7 @@ public class ControladorViandasVenta {
 					viandaVenta.getObservacion()
 			};
 			((DefaultTableModel)tbl.getModel()).addRow(fila);
-		}
+    	}
 	}
 	
 }

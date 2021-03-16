@@ -60,11 +60,8 @@ public class ControladorEliminarViandasVenta {
 	
 	public void CargarCantidad(JSpinner spinner, Object venta, Object vianda) throws RemoteException, VentaNoExisteException {
 		if(venta != null && vianda != null) {
-			System.out.println((VOVenta)venta);
-			System.out.println((VOVianda)vianda);
 			VOVianda_Venta[] viandas = contr.getViandasVenta(((VOVenta)venta).getCodigo());
 			for (VOVianda_Venta viandaVenta : viandas) {
-				System.out.println(viandaVenta.getVianda().getCodigo().equals(((VOVianda)vianda).getCodigo())); 
 				if(viandaVenta.getVianda().getCodigo().equals(((VOVianda)vianda).getCodigo())) {
 					spinner.setModel(new SpinnerNumberModel(1, 1, viandaVenta.getCantidad(), 1));
 					break;
